@@ -1,4 +1,6 @@
-from Optimizer.Actor_Critic.Actor_Critic import Actor_Critic
+from Optimizer.A3C.Server import Server
+from Optimizer.A3C.Worker import Worker
+
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
 from Simulator.Mobile_Charger.mobile_charger import MobileCharger
@@ -49,10 +51,14 @@ for nb_run in range(3):
         node = Node(location=location, com_ran=com_ran, energy=energy, energy_max=energy_max, id=i,
                     energy_thresh=0.4 * energy, prob=prob)
         list_node.append(node)
+
+    # Global optimizer
+    global_Optimizer = Server(nb_action=clusters, nb_state_feature=10, name="Global Optimizer")
     mc_list = []
     optimizer_list = []
     for id in range(nb_mc):
-        optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
+        # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
+        optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id)
         optimizer_list.append(optimizer)
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
@@ -69,6 +75,11 @@ for nb_run in range(3):
     temp = net.simulate(max_time=1000000, file_name=file_name)
     life_time.append(temp[0])
     result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
+
+    # free memory space
+    del global_Optimizer
+    for optimizer in optimizer_list:
+        del optimizer
 
 confidence = 0.95
 h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)
