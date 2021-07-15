@@ -1,5 +1,14 @@
 import torch
 from Simulator.parameter import depot
+from Server_method import update_gradient
+
+
+def get_nearest_charging_pos(current_location, charging_pos_list):
+    MCpos = torch.Tensor(current_location)
+    A = torch.Tensor(charging_pos_list)
+    distance = torch.sqrt(torch.sum(torch.pow(MCpos - A, 2), dim=1))
+    min_index = torch.argmin(distance)
+    return charging_pos_list[min_index]
 
 
 # TODO: define the reward
@@ -19,15 +28,13 @@ def TERMINAL_STATE(state_tensor):
 def extract_state_tensor(worker, network):
     # Implement here
     MC = network.mc_list[worker.id]
-    MC_infor = [MC.current[0], MC.current[1], MC.energy]
+    MC_location = [MC.current[0], MC.current[1]]
+    MC_infor = MC_location + [MC.energy]
     MC_infor_tensor = torch.Tensor(MC_infor)
     MC_infor_tensor.requires_grad = False
 
-    charging_pos_infor = []
-    for charging_pos in network.nb_charging_pos:
-        charging_pos_infor.append(None) #????
-    charging_pos_tensor = torch.Tensor(charging_pos_infor)
-    charging_pos_tensor.requires_grad = False
+    charge_pos = network.charging_pos
+
 
     nodes_infor = []
     for each_node in network.node:
@@ -56,4 +63,4 @@ def asynchronize(Worker, Server):
     This function perform asynchronize update to the cloud
     """
     networks = (Worker.actor_net, Worker.critic_net)
-    Server.update_gradient(networks)
+    update_gradient(Server, networks)

@@ -24,9 +24,9 @@ def print_actor_grad(worker):
 #test copy weights
 def test1():
     baseServer = Server(nb_state_feature=4, nb_action=3, name="server")
-    worker1 = Worker(Server_object=baseServer, name="worker_1")
-    worker2 = Worker(Server_object=baseServer, name="worker_2")
-    worker3 = Worker(Server_object=baseServer, name="worker_3")
+    worker1 = Worker(Server_object=baseServer, name="worker_1", id=1)
+    worker2 = Worker(Server_object=baseServer, name="worker_2", id=2)
+    worker3 = Worker(Server_object=baseServer, name="worker_3", id=3)
 
     workerList = [worker1, worker2, worker3]
     synchronize(baseServer, workerList)
@@ -51,8 +51,8 @@ def test1():
 # test synchronize
 def test2():
     baseServer = Server(nb_state_feature=4, nb_action=3, name="server")
-    worker1 = Worker(Server_object=baseServer, name="worker_1")
-    worker2 = Worker(Server_object=baseServer, name="worker_2")
+    worker1 = Worker(Server_object=baseServer, name="worker_1", id=1)
+    worker2 = Worker(Server_object=baseServer, name="worker_2", id=2)
     workerList = [worker1, worker2]
 
     test_vector = torch.Tensor([1,2,3,4])
@@ -78,7 +78,7 @@ def test2():
 # test asynchronize
 def test3():
     baseServer = Server(nb_state_feature=4, nb_action=3, name="server")
-    worker1 = Worker(Server_object=baseServer, name="worker_1")
+    worker1 = Worker(Server_object=baseServer, name="worker_1", id=1)
 
     print("----------------------")
     print_actor_grad(worker1) # return all None
@@ -107,8 +107,13 @@ def test3():
 
 
 if __name__ == "__main__":
-    a = (1, 2, 3, 4)
-    print(a[3])
+    # test3()
+    MCpos = torch.Tensor((5,0))
+    chargpos = [(1,2),(3,4),(5,1),(6,8)]
+    A = torch.Tensor(chargpos)
+    distance = torch.sqrt(torch.sum(torch.pow(MCpos - A, 2), dim=1))
+    min_index = torch.argmin(distance)
+    print(chargpos[min_index])
     """
     CONFIRM: all test passed, A3C is implemented correctly
     """
