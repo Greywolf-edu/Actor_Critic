@@ -71,7 +71,7 @@ class Worker(Server):
     def update(self, network):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [R(t+1), R(t+2), R(t+3)]
-        state_tensor = extract_state_tensor(network)
+        state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
         if self.step != 0:
             R = reward_function(network)
@@ -85,6 +85,8 @@ class Worker(Server):
             # clear record
             self.reward_record.clear()
             self.state_record.clear()
+            # restore current state for next use
+            self.state_record.append(state_tensor)
 
         policy = self.get_policy(state_tensor)
         action = np.random.choice(self.action_space, p=policy)
@@ -92,8 +94,6 @@ class Worker(Server):
         # increase step
         self.step += 1
         return action, charging_time_func(network)
-
-
 
 
 if __name__ == "__main__":

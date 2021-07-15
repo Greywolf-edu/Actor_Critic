@@ -66,7 +66,7 @@ for nb_run in range(3):
                            optimizer=optimizer)
         mc_list.append(mc)
     target = [int(item) for item in df.target[experiment_index].split(',')]
-    net = Network(list_node=list_node, mc_list=mc_list, target=target, package_size=package_size, nb_chargepos=clusters)
+    net = Network(list_node=list_node, mc_list=mc_list, target=target, package_size=package_size, nb_charging_pos=clusters)
     print(
         "experiment {} #{}:\n\tnode: {}, target: {}, prob: {}, mc: {}, alpha: {}, cluster: {}, package_size: {}".format(
             experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, alpha, clusters,

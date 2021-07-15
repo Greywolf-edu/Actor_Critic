@@ -1,9 +1,11 @@
 import torch.nn as nn
+from Optimizer.A3C.Server_method import update_gradient
 
 
 class Server(nn.Module):
     def __init__(self, nb_state_feature, nb_action, name):
         super(Server, self).__init__()
+
         self.actor_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
             nn.ReLU(),
@@ -37,19 +39,7 @@ class Server(nn.Module):
         self.name = name
 
     def update_gradient(self, MC_networks):
-        """
-        :parameter MC_networks is ONE MC network: a tuple of (actor, critic)
-        """
-        MC_actor_net, MC_critic_net = MC_networks
-        # Update server's actor network
-        for serverParam, MCParam in \
-                zip(self.actor_net.parameters(), MC_actor_net.parameters()):
-            serverParam.data += self.actor_lr * MCParam.grad
-
-        # Update server's critic network
-        for serverParam, MCParam in \
-                zip(self.critic_net.parameters(), MC_critic_net.parameters()):
-            serverParam.data += self.critic_lr * MCParam.grad
+        update_gradient(self, MC_networks)
 
 
 if __name__ == "__main__":

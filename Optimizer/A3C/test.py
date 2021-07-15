@@ -107,7 +107,8 @@ def test3():
 
 
 if __name__ == "__main__":
-    test3()
+    a = (1, 2, 3, 4)
+    print(a[3])
     """
     CONFIRM: all test passed, A3C is implemented correctly
     """
