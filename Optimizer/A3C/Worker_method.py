@@ -31,10 +31,19 @@ def extract_state_tensor(worker, network):
     MC_location = [MC.current[0], MC.current[1]]
     MC_infor = MC_location + [MC.energy]
     MC_infor_tensor = torch.Tensor(MC_infor)
+    MC_infor_tensor = torch.flatten(MC_infor_tensor)  # flatten
     MC_infor_tensor.requires_grad = False
 
+    charge_pos_infor = []
     charge_pos = network.charging_pos
-
+    for mc in network.mc_list:
+        if mc.id != MC.id:
+            x_mc, y_mc = get_nearest_charging_pos(mc.current, charge_pos)
+            e_mc = mc.energy
+            charge_pos_infor.append([x_mc, y_mc, e_mc])
+    charge_pos_tensor = torch.Tensor(charge_pos_infor)
+    charge_pos_tensor = torch.flatten(charge_pos_tensor) # flatten
+    charge_pos_tensor.requires_grad = False
 
     nodes_infor = []
     for each_node in network.node:
@@ -43,12 +52,13 @@ def extract_state_tensor(worker, network):
         e = each_node.avg_energy
         nodes_infor.append([x, y, E, e])
 
-    nodes_infor_tensor = torch.Tensor(nodes_infor) # shape = (numnode, 4)
+    nodes_infor_tensor = torch.Tensor(nodes_infor)  # shape
+    nodes_infor_tensor = torch.flatten(nodes_infor_tensor)
     nodes_infor_tensor.requires_grad = False
 
-    state = None
+    state = torch.cat([MC_infor_tensor, charge_pos_tensor, nodes_infor_tensor])
     # return Tensor form of the state
-    return torch.Tensor(state, dtype=torch.float32)
+    return state
 
 
 # TODO: get charging time

@@ -19,7 +19,7 @@ def get_location(mc):
             return x_hat, y_hat
 
 
-def charging(mc, net):
+def charging(mc, net, node=None):
     for node in net.node:
         p = node.charge(mc)
         mc.energy -= p

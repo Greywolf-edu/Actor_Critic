@@ -108,12 +108,18 @@ def test3():
 
 if __name__ == "__main__":
     # test3()
-    MCpos = torch.Tensor((5,0))
+    current_pos = (0, 0)
     chargpos = [(1,2),(3,4),(5,1),(6,8)]
     A = torch.Tensor(chargpos)
-    distance = torch.sqrt(torch.sum(torch.pow(MCpos - A, 2), dim=1))
-    min_index = torch.argmin(distance)
-    print(chargpos[min_index])
+    # print(A)
+    B = torch.flatten(A)
+    C = torch.flatten(torch.Tensor([(1,2,3,4,5), (2,3,5,2,3)]))
+    D = torch.flatten(torch.Tensor([[2,3,4],[7,1,1],[0,0,0]]))
+
+    print(B.size())
+    print(C.size())
+    print(D.size())
+    print(torch.cat([B, C, D]).size())
     """
     CONFIRM: all test passed, A3C is implemented correctly
     """

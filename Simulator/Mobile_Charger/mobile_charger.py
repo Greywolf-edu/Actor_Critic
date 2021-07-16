@@ -15,7 +15,8 @@ class MobileCharger:
         self.start = start  # from location
         self.end = end  # to location
         self.current = start  # location now
-        self.end_time = -1
+        self.end_time = -1  # end time is what ???
+        self.standing_duration = 0 # time duration of standing
 
         self.energy = energy  # energy now
         self.capacity = capacity  # capacity of mc
