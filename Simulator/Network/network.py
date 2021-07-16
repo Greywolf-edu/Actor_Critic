@@ -7,7 +7,7 @@ from network_method import uniform_com_func, to_string, count_package_function, 
 
 
 class Network:
-    def __init__(self, list_node=None, mc_list=None, target=None, package_size=400, nb_charging_pos=81):
+    def __init__(self, list_node=None, mc_list=None, target=None, server=None, package_size=400, nb_charging_pos=81):
         self.node = list_node
         self.set_neighbor()
         self.set_level()
@@ -18,6 +18,9 @@ class Network:
         self.nb_charging_pos = nb_charging_pos
         self.active = False
         self.package_lost = False
+
+        self.Server = server
+        self.synchronize_trigger = para
 
     def set_neighbor(self):
         for node in self.node:
@@ -64,6 +67,7 @@ class Network:
         if self.active:
             for mc in self.mc_list:
                 mc.run(network=self, time_stem=t, net=self)
+
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):

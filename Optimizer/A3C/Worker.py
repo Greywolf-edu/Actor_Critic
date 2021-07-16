@@ -1,26 +1,23 @@
 import torch
 import numpy as np
+import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, asynchronize
 
 
 class Worker(Server):
-    def __init__(self, Server_object, name, id,
-                 actor_lr=1e-4, critic_lr=1e-4,
-                 gamma = 0.95, beta_entropy=1e-2):
+    def __init__(self, Server_object, name, id):
         super(Worker, self).__init__(nb_state_feature=Server_object.nb_state_feature,
                                      nb_action=Server_object.nb_action,
                                      name= name)
 
         self.id = id
-
-        self.actor_lr = actor_lr
-        self.critic_lr = critic_lr
-        self.beta_entropy = beta_entropy
         self.step = 0
-        self.gamma = gamma
-        self.k_step = 3
+
+        self.beta_entropy = para.A3C_beta_entropy
+        self.gamma = para.A3C_gamma
+        self.k_step = para.A3C_k_step
         self.state_record = []  # record k_step states
         self.reward_record = [] # record k_step rewards
 
@@ -93,7 +90,7 @@ class Worker(Server):
 
         # increase step
         self.step += 1
-        return action, charging_time_func(network)
+        return action, charging_time_func(self, network)
 
 
 if __name__ == "__main__":

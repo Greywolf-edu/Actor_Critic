@@ -28,7 +28,7 @@ def TERMINAL_STATE(state_tensor):
 def extract_state_tensor(worker, network):
     # Implement here
     MC = network.mc_list[worker.id]
-    MC_location = [MC.current[0], MC.current[1]]
+    MC_location = [MC.current[0], MC.current[1]]    # get x, y coordination
     MC_infor = MC_location + [MC.energy]
     MC_infor_tensor = torch.Tensor(MC_infor)
     MC_infor_tensor = torch.flatten(MC_infor_tensor)  # flatten
@@ -63,7 +63,12 @@ def extract_state_tensor(worker, network):
 
 # TODO: get charging time
 def charging_time_func(Object=None, network=None):
-    pass
+    """
+    :param Object: current MC
+    :param network
+    :return: time which the MC will stand charging for nodes
+    """
+    return 100
 
 
 def asynchronize(Worker, Server):

@@ -1,4 +1,5 @@
 import torch.nn as nn
+import Simulator.parameter as para
 from Optimizer.A3C.Server_method import update_gradient
 
 
@@ -30,8 +31,8 @@ class Server(nn.Module):
             nn.ReLU()
         )
 
-        self.actor_lr = 1e-4
-        self.critic_lr = 1e-3
+        self.actor_lr = para.A3C_serverActor_lr
+        self.critic_lr = para.A3C_serverCritic_lr
 
         self.nb_state_feature = nb_state_feature
         self.nb_action = nb_action
