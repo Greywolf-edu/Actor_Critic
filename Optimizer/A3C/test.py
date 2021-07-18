@@ -108,18 +108,11 @@ def test3():
 
 if __name__ == "__main__":
     # test3()
-    current_pos = (0, 0)
-    chargpos = [(1,2),(3,4),(5,1),(6,8)]
-    A = torch.Tensor(chargpos)
-    # print(A)
-    B = torch.flatten(A)
-    C = torch.flatten(torch.Tensor([(1,2,3,4,5), (2,3,5,2,3)]))
-    D = torch.flatten(torch.Tensor([[2,3,4],[7,1,1],[0,0,0]]))
-
-    print(B.size())
-    print(C.size())
-    print(D.size())
-    print(torch.cat([B, C, D]).size())
+    L = [1,2,3,4,5]
+    T = L[-1]
+    L.clear()
+    L.append(T)
+    print(L)
     """
     CONFIRM: all test passed, A3C is implemented correctly
     """

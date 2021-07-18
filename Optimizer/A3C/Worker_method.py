@@ -77,5 +77,24 @@ def asynchronize(Worker, Server):
     :param Server: cloud
     This function perform asynchronize update to the cloud
     """
+    Worker.accumulate_gradient()
     networks = (Worker.actor_net, Worker.critic_net)
     update_gradient(Server, networks)
+
+    # clean gradient
+    Worker.reset_grad()
+    # clear record
+    Worker.reward_record.clear()
+    lastState= Worker.state_record[-1]
+    Worker.state_record.clear()
+    # restore current state for next use
+    Worker.state_record.append(lastState)
+
+
+def all_asynchronize(MCs, Server):
+    """
+    :param MCs: list of MC
+    :param Server: cloud
+    """
+    for MC in MCs:
+        asynchronize(MC.optimizer, Server)

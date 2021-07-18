@@ -1,5 +1,7 @@
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker import Worker
+from Optimizer.A3C.Server_method import synchronize
+from Optimizer.A3C.Worker_method import all_asynchronize
 
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network

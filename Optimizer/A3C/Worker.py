@@ -17,9 +17,9 @@ class Worker(Server):
 
         self.beta_entropy = para.A3C_beta_entropy
         self.gamma = para.A3C_gamma
-        self.k_step = para.A3C_k_step
-        self.state_record = []  # record k_step states
-        self.reward_record = [] # record k_step rewards
+        # self.k_step = para.A3C_k_step
+        self.state_record = []  # record states
+        self.reward_record = [] # record rewards
 
         self.action_space = [i for i in range(self.nb_action)]
 
@@ -38,7 +38,10 @@ class Worker(Server):
     def value_loss_fn(self, value, reward):
         return 1/2 * torch.pow(reward - value,2)
 
-    def accumulate_gradient(self, Server):
+    def accumulate_gradient(self):
+        assert len(self.state_record) == len(self.reward_record) + 1, \
+            "INVALID calling accumulate_gradient"
+
         R = 0 if TERMINAL_STATE(self.state_record[-1]) \
             else self.critic_net(self.state_record[-1])
 
@@ -58,38 +61,22 @@ class Worker(Server):
             policy_loss = self.policy_loss_fn(policy=policy, temporal_diff=tmp_diff)
             policy_loss.backward()
 
-        asynchronize(Server=Server, Worker=self)      # perform asynchronize
-        self.reset_grad()   # clean gradient
-
     def reset_grad(self):
         self.actor_net.zero_grad()
         self.critic_net.zero_grad()
 
-    def update(self, network):
+    def getAction(self, network):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [R(t+1), R(t+2), R(t+3)]
         state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
-        if self.step != 0:
+        if len(self.state_record) != 0:
             R = reward_function(network)
             self.reward_record.append(R)
-
-        # Done k step or reach terminal state
-        if len(self.state_record) == self.k_step or TERMINAL_STATE(state_tensor):
-            assert len(self.state_record) == len(self.reward_record) + 1, \
-                "INVALID calling accumulate_gradient"
-            self.accumulate_gradient(network.global_optimizer) # Server
-            # clear record
-            self.reward_record.clear()
-            self.state_record.clear()
-            # restore current state for next use
-            self.state_record.append(state_tensor)
 
         policy = self.get_policy(state_tensor)
         action = np.random.choice(self.action_space, p=policy)
 
-        # increase step
-        self.step += 1
         return action, charging_time_func(self, network)
 
 
