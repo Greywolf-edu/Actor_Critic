@@ -4,6 +4,7 @@ from Optimizer.A3C.Worker import Worker
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
 from Simulator.Mobile_Charger.mobile_charger import MobileCharger
+from Simulator.parameter import SIM_duration
 
 import random
 import pandas as pd
@@ -38,7 +39,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(1):
+for nb_run in range(3):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -59,7 +60,7 @@ for nb_run in range(1):
     for id in range(nb_mc):
         # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
         optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id)
-        optimizer_list.append(optimizer)
+        optimizer_list.append(optimizer) # List worker
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
                            e_self_charge=df.e_mc[experiment_index], velocity=df.velocity[experiment_index],
@@ -74,7 +75,7 @@ for nb_run in range(1):
             package_size))
     file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
     try:
-        temp = net.simulate(max_time=100, file_name=file_name)
+        temp = net.simulate(max_time=SIM_duration, file_name=file_name)
         life_time.append(temp[0])
         result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
 

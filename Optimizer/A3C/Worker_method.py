@@ -21,8 +21,8 @@ def reward_function(network):
 
 # TODO: define the terminal state
 def TERMINAL_STATE(state_tensor):
-    return state_tensor[0] == depot[0] and state_tensor[1] == depot[1]
-
+    # return state_tensor[0] == depot[0] and state_tensor[1] == depot[1]
+    return False
 
 # TODO: get state from network
 def extract_state_tensor(worker, network):
@@ -31,7 +31,7 @@ def extract_state_tensor(worker, network):
     MC_location = [MC.current[0], MC.current[1]]    # get x, y coordination
     MC_infor = MC_location + [MC.energy]
     MC_infor_tensor = torch.Tensor(MC_infor)
-    MC_infor_tensor = torch.flatten(MC_infor_tensor)  # flatten
+    MC_infor_tensor = torch.flatten(MC_infor_tensor)  # flatten (3) [x, y, E]
     MC_infor_tensor.requires_grad = False
 
     charge_pos_infor = []
@@ -42,23 +42,23 @@ def extract_state_tensor(worker, network):
             e_mc = mc.energy
             charge_pos_infor.append([x_mc, y_mc, e_mc])
     charge_pos_tensor = torch.Tensor(charge_pos_infor)
-    charge_pos_tensor = torch.flatten(charge_pos_tensor) # flatten
+    charge_pos_tensor = torch.flatten(charge_pos_tensor) # flatten (3 x nb_mc - 3)
     charge_pos_tensor.requires_grad = False
 
     nodes_infor = []
     for each_node in network.node:
         x, y = each_node.location
-        E = each_node.energy
-        e = each_node.avg_energy
+        E = each_node.energy # current energy
+        e = each_node.avg_energy # consumsion rate
         nodes_infor.append([x, y, E, e])
 
-    nodes_infor_tensor = torch.Tensor(nodes_infor)  # shape
-    nodes_infor_tensor = torch.flatten(nodes_infor_tensor)
+    nodes_infor_tensor = torch.Tensor(nodes_infor)
+    nodes_infor_tensor = torch.flatten(nodes_infor_tensor) # 4 x nb_node
     nodes_infor_tensor.requires_grad = False
 
     state = torch.cat([MC_infor_tensor, charge_pos_tensor, nodes_infor_tensor])
     # return Tensor form of the state
-    return state
+    return state # 3 x nb_mc + 4 x nb_node
 
 
 # TODO: get charging time
@@ -66,14 +66,14 @@ def charging_time_func(Object=None, network=None):
     """
     :param Object: current MC
     :param network
-    :return: time which the MC will stand charging for nodes
+    :return: duration time which the MC will stand charging for nodes
     """
     return 100
 
 
-def asynchronize(Worker, Server):
+def asynchronize(Worker, Server): # MC sends gradient to Server
     """
-    :param Worker: current MC (self)
+    :param Worker: current MC's optimizer (self)
     :param Server: cloud
     This function perform asynchronize update to the cloud
     """

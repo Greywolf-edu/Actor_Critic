@@ -6,7 +6,7 @@ from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, asynchronize
 
 
-class Worker(Server):
+class Worker(Server): # Optimizer
     def __init__(self, Server_object, name, id):
         super(Worker, self).__init__(nb_state_feature=Server_object.nb_state_feature,
                                      nb_action=Server_object.nb_action,
@@ -67,7 +67,7 @@ class Worker(Server):
 
     def getAction(self, network):
         # state_record = [S(t), S(t+1), S(t+2)]
-        # reward_record = [R(t+1), R(t+2), R(t+3)]
+        # reward_record = [     R(t+1), R(t+2)]
         state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
         if len(self.state_record) != 0:
