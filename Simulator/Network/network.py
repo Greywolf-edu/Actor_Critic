@@ -4,7 +4,8 @@ from scipy.spatial import distance
 
 import Simulator.parameter as para
 from network_method import uniform_com_func, to_string, count_package_function, network_partition
-
+from Optimizer.A3C.Server_method import synchronize
+from Optimizer.A3C.Worker_method import all_asynchronize
 
 class Network:
     def __init__(self, list_node=None, mc_list=None, target=None, server=None, package_size=400, nb_charging_pos=81):
@@ -20,7 +21,7 @@ class Network:
         self.package_lost = False
 
         self.Server = server
-        self.synchronize_trigger = para
+        self.T = para.A3C_synchronize_T
 
     def set_neighbor(self):
         for node in self.node:
@@ -51,6 +52,18 @@ class Network:
         return func(self)
 
     def run_per_second(self, t):
+        # ========= Synchronize at t = 0 and t % T == 0 ===========
+        if t == 0:
+            if self.Server is None:
+                print("A3C without global Server ??? Recheck your declaration")
+                exit(100)
+            else:
+                synchronize(self.Server, self.mc_list)
+
+        if t % self.T == 0 and t > 0:   # after T (s)
+            all_asynchronize(MCs=self.mc_list, Server=self.Server)
+            synchronize(self.Server, self.mc_list)
+        # ==========================================================
         state = self.communicate()
         request_id = []
         for index, node in enumerate(self.node):
@@ -67,7 +80,6 @@ class Network:
         if self.active:
             for mc in self.mc_list:
                 mc.run(network=self, time_stem=t, net=self)
-
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):
