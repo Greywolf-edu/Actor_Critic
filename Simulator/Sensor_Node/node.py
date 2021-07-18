@@ -2,7 +2,7 @@ import math
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from node_method import to_string, find_receiver, request_function, estimate_average_energy
+from Simulator.Sensor_Node.node_method import to_string, find_receiver, request_function, estimate_average_energy
 
 
 class Node:

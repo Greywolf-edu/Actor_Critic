@@ -1,6 +1,6 @@
 import torch
 from Simulator.parameter import depot
-from Server_method import update_gradient
+from Optimizer.A3C.Server_method import update_gradient
 
 
 def get_nearest_charging_pos(current_location, charging_pos_list):

@@ -1,7 +1,5 @@
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker import Worker
-from Optimizer.A3C.Server_method import synchronize
-from Optimizer.A3C.Worker_method import all_asynchronize
 
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
@@ -40,7 +38,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(3):
+for nb_run in range(1):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -75,14 +73,16 @@ for nb_run in range(3):
             experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, alpha, clusters,
             package_size))
     file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
-    temp = net.simulate(max_time=1000000, file_name=file_name)
-    life_time.append(temp[0])
-    result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
+    try:
+        temp = net.simulate(max_time=100, file_name=file_name)
+        life_time.append(temp[0])
+        result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
 
-    # free memory space
-    del global_Optimizer
-    for optimizer in optimizer_list:
-        del optimizer
+    finally:
+        # free memory space
+        del global_Optimizer
+        for optimizer in optimizer_list:
+            del optimizer
 
 confidence = 0.95
 h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)

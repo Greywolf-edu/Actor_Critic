@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 import Simulator.parameter as para
-from package import Package
+from Simulator.Network.package import Package
 
 
 def uniform_com_func(net):

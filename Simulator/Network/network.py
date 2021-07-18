@@ -3,7 +3,7 @@ import csv
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from network_method import uniform_com_func, to_string, count_package_function, network_partition
+from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, network_partition
 from Optimizer.A3C.Server_method import synchronize
 from Optimizer.A3C.Worker_method import all_asynchronize
 
