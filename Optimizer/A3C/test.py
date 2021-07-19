@@ -21,7 +21,7 @@ def print_actor_grad(worker):
         print(actor_param.grad)
 
 
-#test copy weights
+# test copy weights
 def test1():
     baseServer = Server(nb_state_feature=4, nb_action=3, name="server")
     worker1 = Worker(Server_object=baseServer, name="worker_1", id=1)
@@ -55,7 +55,7 @@ def test2():
     worker2 = Worker(Server_object=baseServer, name="worker_2", id=2)
     workerList = [worker1, worker2]
 
-    test_vector = torch.Tensor([1,2,3,4])
+    test_vector = torch.Tensor([1, 2, 3, 4])
     result1 = worker1.get_value(test_vector)
     result2 = worker2.get_value(test_vector)
 
@@ -81,16 +81,16 @@ def test3():
     worker1 = Worker(Server_object=baseServer, name="worker_1", id=1)
 
     print("----------------------")
-    print_actor_grad(worker1) # return all None
+    print_actor_grad(worker1)  # return all None
     print("----------------------")
     print_actor_grad(baseServer)  # return all None
 
     zero_actor_weights(baseServer)
     print_actor_param(baseServer)
-    test_vector = torch.Tensor([1,2,3,4])
+    test_vector = torch.Tensor([1, 2, 3, 4])
 
     out_actor_worker1 = worker1.get_policy(test_vector)
-    loss = 1/2 * torch.sum((torch.Tensor([4,5,6]) - out_actor_worker1)**2)
+    loss = 1 / 2 * torch.sum((torch.Tensor([4, 5, 6]) - out_actor_worker1) ** 2)
     loss.backward()
 
     print('---------------------')
@@ -108,7 +108,7 @@ def test3():
 
 if __name__ == "__main__":
     # test3()
-    L = [1,2,3,4,5]
+    L = [1, 2, 3, 4, 5]
     T = L[-1]
     L.clear()
     L.append(T)

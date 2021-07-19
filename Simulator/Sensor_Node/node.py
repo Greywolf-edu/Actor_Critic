@@ -114,7 +114,7 @@ class Node:
     def request(self, network=None, t=0, request_func=request_function):
         """
         send a message to mc if the energy is below a threshold
-        :param mc: mobile charger
+        :param network: network
         :param t: time to send request
         :param request_func: structure of message
         :return: None
