@@ -68,7 +68,6 @@ class Worker(Server): # Optimizer
     def getAction(self, network, MC=None, time_stem=None):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [     R(t+1), R(t+2)]
-        print(f"Here worker id_{self.id} calculate state tensor")
         state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
         if len(self.state_record) != 0:
@@ -77,7 +76,7 @@ class Worker(Server): # Optimizer
 
         policy = self.get_policy(state_tensor)
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
-        print(f"Here worker id_{self.id} make decision")
+        print(f"Here at location ({MC.current[0]}, {MC.current[1]}) worker id_{self.id} made decision")
         return action, charging_time_func(mc_id= self.id, network=network, charging_pos_id=action, time_stem=time_stem)
 
 

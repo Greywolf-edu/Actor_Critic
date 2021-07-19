@@ -17,7 +17,10 @@ def get_nearest_charging_pos(current_location, charging_pos_list):
 def reward_function(network):
     e_list = []
     for each_node in network.node:
-        e_list.append(each_node.energy)
+        if each_node.energy > 0:
+            e_list.append(each_node.energy)
+
+    print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
     return min(e_list)
 
 
