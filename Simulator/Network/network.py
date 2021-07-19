@@ -60,7 +60,8 @@ class Network:
             else:
                 synchronize(self.Server, self.mc_list)
 
-        if t % self.T == 0 and t > 0:   # after T (s)
+        if t % self.T == 0 and t > 200:   # after T (s)
+            print(f"Synchronize at time {t}")
             all_asynchronize(MCs=self.mc_list, Server=self.Server)
             synchronize(self.Server, self.mc_list)
         # ==========================================================
