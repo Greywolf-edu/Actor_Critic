@@ -39,7 +39,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(3):
+for nb_run in range(1):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -82,6 +82,7 @@ for nb_run in range(3):
 
     finally:
         # free memory space
+        print("Free memory space")
         del global_Optimizer
         for optimizer in optimizer_list:
             del optimizer

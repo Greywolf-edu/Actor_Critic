@@ -125,18 +125,22 @@ def asynchronize(Worker, Server): # MC sends gradient to Server
     :param Server: cloud
     This function perform asynchronize update to the cloud
     """
-    Worker.accumulate_gradient()
-    networks = (Worker.actor_net, Worker.critic_net)
-    update_gradient(Server, networks)
+    if len(Worker.state_record) > len(Worker.reward_record):
+        Worker.accumulate_gradient()
+        networks = (Worker.actor_net, Worker.critic_net)
+        update_gradient(Server, networks)
 
-    # clean gradient
-    Worker.reset_grad()
-    # clear record
-    Worker.reward_record.clear()
-    lastState= Worker.state_record[-1]
-    Worker.state_record.clear()
-    # restore current state for next use
-    Worker.state_record.append(lastState)
+        # clean gradient
+        Worker.reset_grad()
+        # clear record
+        Worker.reward_record.clear()
+        lastState= Worker.state_record[-1]
+        Worker.state_record.clear()
+        # restore current state for next use
+        Worker.state_record.append(lastState)
+    else:
+        Worker.reward_record.clear()
+        Worker.state_record.clear()
 
 
 def all_asynchronize(MCs, Server):

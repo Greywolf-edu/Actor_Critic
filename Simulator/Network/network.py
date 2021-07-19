@@ -61,7 +61,7 @@ class Network:
             else:
                 synchronize(self.Server, self.mc_list)
 
-        if t % self.T == 0 and t > 200:   # after T (s)
+        if t % self.T == 0 and t > para.SIM_partition_time:   # after T (s)
             print(f"Synchronize at time {t}")
             all_asynchronize(MCs=self.mc_list, Server=self.Server)
             synchronize(self.Server, self.mc_list)
@@ -93,7 +93,7 @@ class Network:
         t = 0
         while t <= max_time:
             t = t + 1
-            if (t - 1) % 100 == 0:
+            if (t - 1) % para.SIM_log_frequency == 0:
                 print("time = ", t, ", lowest energy node: ", self.node[self.find_min_node()].energy, "at",
                       self.node[self.find_min_node()].location)
                 print('\tnumber of dead node: {}'.format(self.count_dead_node()))
@@ -106,7 +106,7 @@ class Network:
                     print("\tMC#{} at{} is {}".format(mc.id, mc.current, mc.get_status()))
 
             ######################################
-            if t == 200:
+            if t == para.SIM_partition_time:
                 self.partition()
             ######################################
 
@@ -169,7 +169,7 @@ class Network:
         t = 0
         while t <= 2000000:
             t = t + 1
-            if (t - 1) % 100 == 0:
+            if (t - 1) % para.SIM_log_frequency == 0:
                 node_log = open('log/dead_node.csv', 'a')
                 node_writer = csv.DictWriter(node_log, fieldnames=['time', 'dead_node'])
                 node_writer.writerow({"time": t, "dead_node": self.count_dead_node()})

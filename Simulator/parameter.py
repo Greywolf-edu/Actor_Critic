@@ -21,4 +21,5 @@ A3C_serverCritic_lr = 1e-3
 
 # Simulation time
 SIM_duration = 10000
-
+SIM_partition_time = 200
+SIM_log_frequency = 100

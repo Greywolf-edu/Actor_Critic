@@ -5,8 +5,8 @@ def synchronize(Server, MCs):
     :param MCs: list of MC
     """
     for MC in MCs:
-        MC.actor_net.load_state_dict(Server.actor_net.state_dict())
-        MC.critic_net.load_state_dict(Server.critic_net.state_dict())
+        MC.optimizer.actor_net.load_state_dict(Server.actor_net.state_dict())
+        MC.optimizer.critic_net.load_state_dict(Server.critic_net.state_dict())
         
         
 def update_gradient(Server, MC_networks):
