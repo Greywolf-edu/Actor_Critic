@@ -16,6 +16,7 @@ class Network:
         self.target = target
         self.charging_pos = []
         self.request_list = []
+        self.request_id = []
         self.package_size = package_size
         self.nb_charging_pos = nb_charging_pos
         self.active = False
@@ -67,16 +68,16 @@ class Network:
             synchronize(self.Server, self.mc_list)
         # ==========================================================
         state = self.communicate()
-        request_id = []
+        self.request_id = []
         for index, node in enumerate(self.node):
             if node.energy < node.energy_thresh:
                 node.request(network=self, t=t)
-                request_id.append(index)
+                self.request_id.append(index)
             else:
                 node.is_request = False
-        if request_id:
+        if self.request_id:
             for index, node in enumerate(self.node):
-                if index not in request_id and (t - node.check_point[-1]["time"]) > 50:
+                if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
             for mc in self.mc_list:
@@ -96,8 +97,8 @@ class Network:
             if (t - 1) % para.SIM_log_frequency == 0:
                 print("time = ", t, ", lowest energy node: ", self.node[self.find_min_node()].energy, "at",
                       self.node[self.find_min_node()].location)
-                print('\tnumber of dead node: {}'.format(self.count_dead_node()))
-                print('\tnumber of package: {}'.format(self.count_package()))
+                print('\tnumber of dead sensor nodes: {}'.format(self.count_dead_node()))
+                print('\tnumber of monitored targets: {}'.format(self.count_package()))
                 with open(file_name, 'a') as information_log:
                     node_writer = csv.DictWriter(information_log, fieldnames=["time", "nb_dead_node", "nb_package"])
                     node_writer.writerow(
@@ -141,7 +142,7 @@ class Network:
         min_energy = 10 ** 10
         min_id = -1
         for node in self.node:
-            if node.energy < min_energy:
+            if node.energy < min_energy and node.energy > 0:
                 min_energy = node.energy
                 min_id = node.id
         return min_id

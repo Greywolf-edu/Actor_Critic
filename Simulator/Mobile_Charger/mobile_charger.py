@@ -57,15 +57,20 @@ class MobileCharger:
             self.is_self_charge = False
 
     def get_next_location(self, network, time_stem):
-        next_location, charging_time = self.optimizer.getAction(MC=self, network=network, time_stem=time_stem)
+        next_location, charging_time = self.optimizer.getAction(network=network, mc=self, time_stem=time_stem)
         self.start = self.current
         self.end = network.charging_pos[next_location]
+        print('MC #{} is moving to {} and will charge for {}s'.format(self.id, self.end, charging_time))
         moving_time = distance.euclidean(self.start, self.end) / self.velocity
         self.end_time = time_stem + moving_time + charging_time
 
     def run(self, net=None, time_stem=0):
         # print(self.energy, self.start, self.end, self.current)
         if ((not self.is_active) and net.request_list) or abs(time_stem - self.end_time) < 1:
+            if (not self.is_active):
+                print('activate MC #{}'.format(self.id))
+            else:
+                print('MC #{} is finding next location'.format(self.id))
             self.is_active = True
             new_list_request = []
             for request in net.request_list:

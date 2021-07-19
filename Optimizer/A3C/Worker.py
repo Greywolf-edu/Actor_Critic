@@ -65,10 +65,10 @@ class Worker(Server): # Optimizer
         self.actor_net.zero_grad()
         self.critic_net.zero_grad()
 
-    def getAction(self, network, MC=None, time_stem=None):
+    def getAction(self, network=None, mc=None, time_stem=None):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [     R(t+1), R(t+2)]
-        print(f"Here worker id_{self.id} calculate state tensor")
+        # print(f"MC #{self.id} calculate state tensor")
         state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
         if len(self.state_record) != 0:
@@ -77,8 +77,10 @@ class Worker(Server): # Optimizer
 
         policy = self.get_policy(state_tensor)
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
-        print(f"Here worker id_{self.id} make decision")
-        return action, charging_time_func(mc_id= self.id, network=network, charging_pos_id=action, time_stem=time_stem)
+        # print(f"Here worker id_{self.id} make decision")
+        if action == self.nb_action - 1:
+            return action, (mc.capacity - mc.energy)/mc.e_self_charge
+        return action, charging_time_func(mc=mc, network=network, charging_pos_id=action, time_stem=time_stem)
 
 
 if __name__ == "__main__":

@@ -63,7 +63,7 @@ def extract_state_tensor(worker, network):
     return state # 3 x nb_mc + 4 x nb_node
 
 
-def charging_time_func(mc_id=None, network=None, charging_pos_id=None, time_stem=0, alpha=0.1):
+def charging_time_func(mc=None, network=None, charging_pos_id=None, time_stem=0, alpha=0.1):
     """
     :param mc_id: index of current MC
     :param network
@@ -73,13 +73,13 @@ def charging_time_func(mc_id=None, network=None, charging_pos_id=None, time_stem
     :return: duration time which the MC will stand charging for nodes
     """
     charging_position = network.charging_pos[charging_pos_id]
-    mc = network.mc_list[mc_id]
     time_move = distance.euclidean(mc.current, charging_position) / mc.velocity
     energy_min = network.node[0].energy_thresh + alpha * network.node[0].energy_max
     s1 = []  # list of node in request list which has positive charge
     s2 = []  # list of node not in request list which has negative charge
-    for request in network.request_list:
-        node = network.node[request["id"]] 
+    # print(charging_position, len(network.request_id))
+    for request_node_id in network.request_id:
+        node = network.node[request_node_id]
         d = distance.euclidean(charging_position, node.location)
         p = para.alpha / (d + para.beta) ** 2
         p1 = 0
@@ -116,7 +116,8 @@ def charging_time_func(mc_id=None, network=None, charging_pos_id=None, time_stem
     if dead_list:
         arg_min = np.argmin(dead_list)
         return t[arg_min]
-    return 0
+    else:
+        return 0
 
 
 def asynchronize(Worker, Server): # MC sends gradient to Server
