@@ -57,7 +57,7 @@ class MobileCharger:
             self.is_self_charge = False
 
     def get_next_location(self, network, time_stem):
-        next_location, charging_time = self.optimizer.getAction(self, network, time_stem)
+        next_location, charging_time = self.optimizer.getAction(MC=self, network=network, time_stem=time_stem)
         self.start = self.current
         self.end = next_location
         moving_time = distance.euclidean(self.start, self.end) / self.velocity

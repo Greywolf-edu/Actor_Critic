@@ -65,10 +65,10 @@ class Worker(Server): # Optimizer
         self.actor_net.zero_grad()
         self.critic_net.zero_grad()
 
-    def getAction(self, network):
+    def getAction(self, network, MC=None, time_stem=None):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [     R(t+1), R(t+2)]
-        print(f"Here worker id_{self.id} make decision")
+        print(f"Here worker id_{self.id} calculate state tensor")
         state_tensor = extract_state_tensor(self, network)
         self.state_record.append(state_tensor)
         if len(self.state_record) != 0:
@@ -76,16 +76,12 @@ class Worker(Server): # Optimizer
             self.reward_record.append(R)
 
         policy = self.get_policy(state_tensor)
-        action = np.random.choice(self.action_space, p=policy)
-
-        return action, charging_time_func(self, network)
+        action = np.random.choice(self.action_space, p=policy.detach().numpy())
+        print(f"Here worker id_{self.id} make decision")
+        return action, charging_time_func(mc_id= self.id, network=network, charging_pos_id=action, time_stem=time_stem)
 
 
 if __name__ == "__main__":
-    a = torch.tensor(6.0, requires_grad=True)
-    b = torch.tensor(5.0, requires_grad=True)
-    c = a + 3*b
-    c.backward()
-    print(c)
-    print(a.grad)
-    print(b.grad)
+    action_space = [1,2,3,4,5]
+    a = torch.Tensor(action_space)
+    print(a.detach().numpy())
