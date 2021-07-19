@@ -7,6 +7,7 @@ from Simulator.Network.network_method import uniform_com_func, to_string, count_
 from Optimizer.A3C.Server_method import synchronize
 from Optimizer.A3C.Worker_method import all_asynchronize
 
+
 class Network:
     def __init__(self, list_node=None, mc_list=None, target=None, server=None, package_size=400, nb_charging_pos=81):
         self.node = list_node
@@ -62,7 +63,7 @@ class Network:
             else:
                 synchronize(self.Server, self.mc_list)
 
-        if t % self.T == 0 and t > para.SIM_partition_time:   # after T (s)
+        if t % self.T == 0 and t > para.SIM_partition_time:  # after T (s)
             print(f"Synchronize at time {t}")
             all_asynchronize(MCs=self.mc_list, Server=self.Server)
             synchronize(self.Server, self.mc_list)
@@ -142,7 +143,7 @@ class Network:
         min_energy = 10 ** 10
         min_id = -1
         for node in self.node:
-            if node.energy < min_energy and node.energy > 0:
+            if min_energy > node.energy > 0:
                 min_energy = node.energy
                 min_id = node.id
         return min_id
