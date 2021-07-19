@@ -1,5 +1,7 @@
 import torch
-from Simulator.parameter import depot
+from scipy.spatial import distance
+import Simulator.parameter as para
+import numpy as np
 from Optimizer.A3C.Server_method import update_gradient
 
 
@@ -21,7 +23,7 @@ def reward_function(network):
 
 # TODO: define the terminal state
 def TERMINAL_STATE(state_tensor):
-    # return state_tensor[0] == depot[0] and state_tensor[1] == depot[1]
+    # return state_tensor[0] == para.depot[0] and state_tensor[1] == para.depot[1]
     return False
 
 # TODO: get state from network
@@ -61,14 +63,60 @@ def extract_state_tensor(worker, network):
     return state # 3 x nb_mc + 4 x nb_node
 
 
-# TODO: get charging time
-def charging_time_func(Object=None, network=None):
+def charging_time_func(mc_id=None, network=None, charging_pos_id=None, time_stem=0, alpha=0.1):
     """
-    :param Object: current MC
+    :param mc_id: index of current MC
     :param network
+    :param charging_pos_id: index of Charging position
+    :time_stem: current time stamp
+    :alpha: hyper-parameter
     :return: duration time which the MC will stand charging for nodes
     """
-    return 100
+    charging_position = network.charging_pos[charging_pos_id]
+    mc = network.mc_list[mc_id]
+    time_move = distance.euclidean(mc.current, charging_position) / mc.velocity
+    energy_min = network.node[0].energy_thresh + alpha * network.node[0].energy_max
+    s1 = []  # list of node in request list which has positive charge
+    s2 = []  # list of node not in request list which has negative charge
+    for request in network.request_list:
+        node = network.node[request["id"]] 
+        d = distance.euclidean(charging_position, node.location)
+        p = para.alpha / (d + para.beta) ** 2
+        p1 = 0
+        for other_mc in network.mc_list:
+            if other_mc.id != mc.id and other_mc.get_status() == "charging":
+                d = distance.euclidean(other_mc.current, node.location)
+                p1 += (para.alpha / (d + para.beta) ** 2) * (other_mc.end_time - time_stem)
+        if node.energy - time_move * node.avg_energy + p1 < energy_min and p - node.avg_energy > 0:
+            s1.append((node.id, p, p1))
+        if node.energy - time_move * node.avg_energy + p1 > energy_min and p - node.avg_energy < 0:
+            s2.append((node.id, p, p1))
+    t = []
+
+    for index, p, p1 in s1:
+        t.append((energy_min - network.node[index].energy + time_move * network.node[index].avg_energy - p1) / (
+                p - network.node[index].avg_energy))
+    for index, p, p1 in s2:
+        t.append((energy_min - network.node[index].energy + time_move * network.node[index].avg_energy - p1) / (
+                p - network.node[index].avg_energy))
+    dead_list = []
+    for item in t:
+        nb_dead = 0
+        for index, p, p1 in s1:
+            temp = network.node[index].energy - time_move * network.node[index].avg_energy + p1 + (
+                    p - network.node[index].avg_energy) * item
+            if temp < energy_min:
+                nb_dead += 1
+        for index, p, p1 in s2:
+            temp = network.node[index].energy - time_move * network.node[index].avg_energy + p1 + (
+                    p - network.node[index].avg_energy) * item
+            if temp < energy_min:
+                nb_dead += 1
+        dead_list.append(nb_dead)
+    if dead_list:
+        arg_min = np.argmin(dead_list)
+        return t[arg_min]
+    return 0
 
 
 def asynchronize(Worker, Server): # MC sends gradient to Server

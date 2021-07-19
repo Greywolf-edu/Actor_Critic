@@ -15,6 +15,7 @@ class Network:
         self.mc_list = mc_list
         self.target = target
         self.charging_pos = []
+        self.request_list = []
         self.package_size = package_size
         self.nb_charging_pos = nb_charging_pos
         self.active = False
@@ -44,8 +45,8 @@ class Network:
 
     def partition(self, func=network_partition):
         self.charging_pos = func(self)
-        for mc in self.mc_list:
-            mc.optimizer.update_charging_pos(self.charging_pos)
+        # for mc in self.mc_list:
+        #     mc.optimizer.update_charging_pos(self.charging_pos)
         self.active = True
 
     def communicate(self, func=uniform_com_func):
@@ -69,8 +70,7 @@ class Network:
         request_id = []
         for index, node in enumerate(self.node):
             if node.energy < node.energy_thresh:
-                for mc in self.mc_list:
-                    node.request(optimizer=mc.optimizer, t=t)
+                node.request(network=self, t=t)
                 request_id.append(index)
             else:
                 node.is_request = False
@@ -80,7 +80,7 @@ class Network:
                     node.set_check_point(t)
         if self.active:
             for mc in self.mc_list:
-                mc.run(network=self, time_stem=t, net=self)
+                mc.run(net=self, time_stem=t)
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):

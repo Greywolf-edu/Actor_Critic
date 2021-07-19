@@ -1,4 +1,0 @@
-THời điểm xe về tự sạc (mc.energy < 10)
-Hàm reward được normalize trên tất cả các action
-Vectorize network state
-

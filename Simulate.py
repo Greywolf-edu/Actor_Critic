@@ -54,7 +54,8 @@ for nb_run in range(3):
         list_node.append(node)
 
     # Global optimizer
-    global_Optimizer = Server(nb_action=clusters, nb_state_feature=10, name="Global Optimizer")
+    nb_state_feature = nb_mc*3 + len(list_node)*4
+    global_Optimizer = Server(nb_action=clusters, nb_state_feature=nb_state_feature, name="Global Optimizer")
     mc_list = []
     optimizer_list = []
     for id in range(nb_mc):

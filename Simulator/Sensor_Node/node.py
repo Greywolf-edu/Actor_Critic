@@ -111,7 +111,7 @@ class Node:
             a = [1 for neighbor in self.neighbor if net.node[neighbor].is_active]
             self.is_active = True if len(a) > 0 else False
 
-    def request(self, optimizer, t, request_func=request_function):
+    def request(self, network=None, t=0, request_func=request_function):
         """
         send a message to mc if the energy is below a threshold
         :param mc: mobile charger
@@ -122,7 +122,7 @@ class Node:
         self.set_check_point(t)
         # print(self.check_point)
         if not self.is_request:
-            request_func(self, optimizer, t)
+            request_func(self, network, t)
             self.is_request = True
 
     def print_node(self, func=to_string):

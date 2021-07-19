@@ -51,15 +51,15 @@ def find_receiver(node, net):
         return -1
 
 
-def request_function(node, optimizer, t):
+def request_function(node, network, t):
     """
     add a message to request list of mc.
     :param node: the node request
-    :param mc: mobile charger
+    :param network: network
     :param t: time get request
     :return: None
     """
-    optimizer.list_request.append(
+    network.request_list.append(
         {"id": node.id, "energy": node.energy, "avg_energy": node.avg_energy, "energy_estimate": node.energy,
          "time": t})
 
