@@ -1,3 +1,6 @@
+import torch
+
+
 def synchronize(server, mc_list):
     """
     This function synchronize all MC's networks with Server's
@@ -18,9 +21,11 @@ def update_gradient(server, MC_networks):
     # Update server's actor network
     for serverParam, MCParam in \
             zip(server.actor_net.parameters(), MC_actor_net.parameters()):
-        serverParam.data += server.actor_lr * MCParam.grad
+        if not torch.isnan(MCParam.grad).any():
+            serverParam.data += server.actor_lr * MCParam.grad
 
     # Update server's critic network
     for serverParam, MCParam in \
             zip(server.critic_net.parameters(), MC_critic_net.parameters()):
-        serverParam.data += server.critic_lr * MCParam.grad
+        if not torch.isnan(MCParam.grad).any():
+            serverParam.data += server.critic_lr * MCParam.grad

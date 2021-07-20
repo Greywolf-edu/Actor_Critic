@@ -76,12 +76,14 @@ class Worker(Server):  # Optimizer
         self.state_record.append(state_tensor)
 
         policy = self.get_policy(state_tensor)
-        if torch.sum(policy) > 1:
-            FILE = open("log/debug.txt", "w")
+        if torch.isnan(policy).any():
+            FILE = open("debug.txt", "w")
             FILE.write(np.array2string(state_tensor.detach().numpy()))
             FILE.write("\n")
             FILE.write(np.array2string(policy.detach().numpy()))
             FILE.close()
+            print("Error Nan policy")
+            exit(100)
 
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
