@@ -80,7 +80,7 @@ class Worker(Server):  # Optimizer
             FILE = open("log/debug.txt", "w")
             FILE.write(np.array2string(state_tensor.detach().numpy()))
             FILE.write("\n")
-            FILE.write(policy)
+            FILE.write(np.array2string(policy.detach().numpy()))
             FILE.close()
 
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
