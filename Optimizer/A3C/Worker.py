@@ -76,6 +76,13 @@ class Worker(Server):  # Optimizer
         self.state_record.append(state_tensor)
 
         policy = self.get_policy(state_tensor)
+        if torch.sum(policy) > 1:
+            FILE = open("log/debug.txt", "w")
+            FILE.write(state_tensor)
+            FILE.write("\n")
+            FILE.write(policy)
+            FILE.close()
+
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
