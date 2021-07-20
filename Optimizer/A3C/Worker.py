@@ -30,7 +30,7 @@ class Worker(Server):  # Optimizer
         return self.critic_net(state_vector)
 
     def policy_loss_fn(self, policy, temporal_diff):
-        return - temporal_diff * torch.sum(torch.log(policy)) - self.entropy_loss_fn(policy)
+        return - temporal_diff * torch.sum(torch.log(policy)) #- self.entropy_loss_fn(policy)
 
     def entropy_loss_fn(self, policy):
         return - self.beta_entropy * torch.sum(policy * torch.log(policy))
@@ -68,17 +68,16 @@ class Worker(Server):  # Optimizer
     def get_action(self, network=None, mc=None, time_stem=None):
         # state_record = [S(t), S(t+1), S(t+2)]
         # reward_record = [     R(t+1), R(t+2)]
-        state_tensor = extract_state_tensor(self, network)
-        self.state_record.append(state_tensor)
         if len(self.state_record) != 0:
             R = reward_function(network)
             self.reward_record.append(R)
 
+        state_tensor = extract_state_tensor(self, network)
+        self.state_record.append(state_tensor)
+
         policy = self.get_policy(state_tensor)
         action = np.random.choice(self.action_space, p=policy.detach().numpy())
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
-        # return action, charging_time_func(mc_id= self.id, network=network, charging_pos_id=action, time_stem=time_stem)
-        # print(f"Here worker id_{self.id} make decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
         return action, charging_time_func(mc=mc, network=network, charging_pos_id=action, time_stem=time_stem)
