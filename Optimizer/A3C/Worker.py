@@ -30,7 +30,7 @@ class Worker(Server):  # Optimizer
         return self.critic_net(state_vector)
 
     def policy_loss_fn(self, policy, temporal_diff):
-        return - temporal_diff * torch.sum(torch.log(policy)) #- self.entropy_loss_fn(policy)
+        return - temporal_diff[0] * torch.sum(torch.log(policy)) #- self.entropy_loss_fn(policy)
 
     def entropy_loss_fn(self, policy):
         return - self.beta_entropy * torch.sum(policy * torch.log(policy))
@@ -55,11 +55,11 @@ class Worker(Server):  # Optimizer
             policy = self.actor_net(state_vector)
 
             value_loss = self.value_loss_fn(value=value, reward=R)
-            value_loss.backward()
+            value_loss.backward(retain_graph=True)
 
-            tmp_diff = np.array(R - value)
-            policy_loss = self.policy_loss_fn(policy=policy, temporal_diff=tmp_diff)
-            policy_loss.backward()
+            tmp_diff = (R - value)
+            policy_loss = self.policy_loss_fn(policy=policy, temporal_diff=tmp_diff.detach().numpy())
+            policy_loss.backward(retain_graph=True)
 
     def reset_grad(self):
         self.actor_net.zero_grad()
@@ -84,6 +84,17 @@ class Worker(Server):  # Optimizer
 
 
 if __name__ == "__main__":
-    action_space = [1, 2, 3, 4, 5]
-    a = torch.Tensor(action_space)
-    print(a.detach().numpy())
+    # action_space = [1, 2, 3, 4, 5]
+    # a = torch.Tensor(action_space)
+    # print(a.detach().numpy())
+
+    b = torch.Tensor([3])
+    b.requires_grad = True
+    a = torch.Tensor([4])
+    a.requires_grad = True
+    c = 3*b + a
+    c.backward(retain_graph=True)
+    c.backward(retain_graph=True)
+    print(b.grad)
+    print(a.grad)
+    print(b.detach().numpy()[0])
