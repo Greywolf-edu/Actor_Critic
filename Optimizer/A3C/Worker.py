@@ -78,7 +78,7 @@ class Worker(Server):  # Optimizer
         policy = self.get_policy(state_tensor)
         if torch.sum(policy) > 1:
             FILE = open("log/debug.txt", "w")
-            FILE.write(state_tensor)
+            FILE.write(np.array2string(state_tensor.detach().numpy()))
             FILE.write("\n")
             FILE.write(policy)
             FILE.close()
