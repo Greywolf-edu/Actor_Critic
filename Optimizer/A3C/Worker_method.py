@@ -131,7 +131,7 @@ def asynchronize(Worker, Server):  # MC sends gradient to Server
     This function perform asynchronize update to the cloud
     """
     print(f"Worker id_{Worker.id} asynchronized with len(state, reward) = ({len(Worker.state_record)},{len(Worker.reward_record)})")
-    if len(Worker.state_record) > len(Worker.reward_record):
+    if len(Worker.state_record) > len(Worker.reward_record) > 0:
         Worker.accumulate_gradient()
         networks = (Worker.actor_net, Worker.critic_net)
         update_gradient(Server, networks)
