@@ -19,6 +19,11 @@ A3C_beta_entropy = 1e-2
 A3C_serverActor_lr = 1e-3
 A3C_serverCritic_lr = 1e-3
 
+#A3C week2
+A3C_alpha_heuristic = 1
+A3C_decay_heuristic = 0.98
+A3C_clipping_gradient = 0.5
+
 # Simulation time
 SIM_duration = 10000
 SIM_partition_time = 200
