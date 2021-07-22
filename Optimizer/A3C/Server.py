@@ -1,6 +1,6 @@
 import torch.nn as nn
 import Simulator.parameter as para
-from Optimizer.A3C.Server_method import update_gradient
+from Optimizer.A3C.Server_method import update_gradient, zero_net_weights
 
 
 class Server(nn.Module):
@@ -19,6 +19,7 @@ class Server(nn.Module):
             nn.Linear(in_features=128, out_features=nb_action),
             nn.Softmax()
         )
+        zero_net_weights(self.actor_net)
 
         self.critic_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
@@ -30,6 +31,7 @@ class Server(nn.Module):
             nn.Linear(in_features=256, out_features=1),
             nn.ReLU()
         )
+        zero_net_weights(self.critic_net)
 
         self.actor_lr = para.A3C_serverActor_lr
         self.critic_lr = para.A3C_serverCritic_lr

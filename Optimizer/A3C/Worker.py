@@ -6,6 +6,8 @@ from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, get_heuristic_policy, \
     extract_state_tensor_v2, one_hot
 
+import csv
+
 
 class Worker(Server):  # Optimizer
     def __init__(self, Server_object, name, id):
@@ -35,6 +37,15 @@ class Worker(Server):  # Optimizer
             "policy_prob": policy_prob,     # record policy prob(action t)
             "behavior_prob": behavior_prob  # record behavior prob(action t)
         }
+
+        with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:
+            dumpfile_writer = csv.writer(dumpfile)
+            if self.step == 0:
+                dumpfile_writer.writerow(experience.keys())
+            dumpfile_writer.writerow([
+                self.step, reward, state.detach().numpy(), action, policy_prob.detach().numpy(), behavior_prob
+            ])
+
         self.step += 1
         return experience
 
@@ -107,7 +118,7 @@ class Worker(Server):  # Optimizer
         self.buffer.append(
             self.create_experience(
                 state=state_tensor, action=action,
-                policy_prob=policy[action], behavior_prob=None, #behavior_policy[action],
+                policy_prob=policy[action], behavior_prob= None, # behavior_policy[action],
                 reward=R
             )
         )

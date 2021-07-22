@@ -29,3 +29,8 @@ def update_gradient(server, MC_networks):
             zip(server.critic_net.parameters(), MC_critic_net.parameters()):
         if not torch.isnan(MCParam.grad).any():
             serverParam.data += server.critic_lr * MCParam.grad
+
+
+def zero_net_weights(net):
+    for net_param in net.parameters():
+        net_param.data *= 0
