@@ -3,7 +3,7 @@ import numpy as np
 import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
-    extract_state_tensor, charging_time_func, asynchronize
+    extract_state_tensor, charging_time_func, get_heuristic_policy, extract_state_tensor_v2
 
 
 class Worker(Server):  # Optimizer
@@ -17,9 +17,14 @@ class Worker(Server):  # Optimizer
 
         self.beta_entropy = para.A3C_beta_entropy
         self.gamma = para.A3C_gamma
+        self.alpha_H = para.A3C_alpha_heuristic
+        self.theta_H = para.A3C_decay_heuristic
+
         # self.k_step = para.A3C_k_step
         self.state_record = []  # record states
         self.reward_record = []  # record rewards
+        self.behavior_record = [] # record behavior
+        self.policy_record = [] # record policy
 
         self.action_space = [i for i in range(self.nb_action)]
 
@@ -85,7 +90,12 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        action = np.random.choice(self.action_space, p=policy.detach().numpy())
+        heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
+        assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1"
+
+        behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+
+        action = np.random.choice(self.action_space, p=behavior_policy.detach().numpy())
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
@@ -93,25 +103,31 @@ class Worker(Server):  # Optimizer
 
 
 if __name__ == "__main__":
-    # action_space = [1, 2, 3, 4, 5]
+    action_space = [1, 2, 3, 4]
     # a = torch.Tensor(action_space)
     # print(a.detach().numpy())
 
-    b = torch.Tensor([3])
-    b.requires_grad = True
-    a = torch.Tensor([4])
-    a.requires_grad = True
-    c = 3*b + a
-    c.backward(retain_graph=True)
-    c.backward(retain_graph=True)
-    print(b.grad)
-    print(a.grad)
-    print(b.detach().numpy()[0])
+    # b = torch.Tensor([3])
+    # b.requires_grad = True
+    # a = torch.Tensor([4])
+    # a.requires_grad = True
+    # c = 3*b + a
+    # c.backward(retain_graph=True)
+    # c.backward(retain_graph=True)
+    # print(b.grad)
+    # print(a.grad)
+    # print(b.detach().numpy()[0])
+    alpha_H = 0.8
+    a = torch.Tensor([0.1, 0.2, 0.3, 0.4])
+    b = np.array([4,3,1,2])
+    c = np.exp(b)/np.sum(np.exp(b))
+    d = (1 - alpha_H) * a + alpha_H * c
+    print(d)
+    print(np.random.choice(action_space, p=d.detach().numpy()))
 
-    #   a0,  a1,  a2
-    # [0.3, 0.3, 0.4] x x
-    # [0.1, 0.8, 0.1] x y
-    # 1. Pre-train Q
-    # 2. Fuzzy. (Heuristic) R => [B0, B1, B2] => softmax ()
-    # y = 0.8, y = y * 0.95, y < 0.01, y
-    # [0.2, 0.5, 0.3]
+
+
+
+
+
+
