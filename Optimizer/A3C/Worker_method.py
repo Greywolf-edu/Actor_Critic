@@ -13,7 +13,7 @@ def get_nearest_charging_pos(current_location, charging_pos_list):
     return charging_pos_list[min_index]
 
 
-# TODO: define the reward
+# TODO: re-define the reward
 def reward_function(network):
     e_list = []
     for each_node in network.node:
@@ -24,13 +24,12 @@ def reward_function(network):
     return min(e_list)
 
 
-# TODO: define the terminal state
 def TERMINAL_STATE(state_tensor):
     # return state_tensor[0] == para.depot[0] and state_tensor[1] == para.depot[1]
     return False
 
 
-# TODO: get state from network
+# TODO: get state from network (modified - Hoang Hai Long)
 def extract_state_tensor(worker, network):
     # Implement here
     MC = network.mc_list[worker.id]
@@ -66,6 +65,10 @@ def extract_state_tensor(worker, network):
     # return Tensor form of the state
     return state  # 3 x nb_mc + 4 x nb_node
 
+
+# TODO: get state from network (new - Nguyen Thanh Long)
+def extract_state_tensor_v2(worker, network):
+    return None
 
 def charging_time_func(mc=None, network=None, charging_pos_id=None, time_stem=0, alpha=0.1):
     """
@@ -122,6 +125,13 @@ def charging_time_func(mc=None, network=None, charging_pos_id=None, time_stem=0,
         return t[arg_min]
     else:
         return 0
+
+
+# TODO: impelement heuristic policy (Nguyen Thanh Long)
+def get_heuristic_policy(mc=None, Worker=None, network=None):
+    H_policy = None # numpy array of size = #nb_action
+
+    return H_policy
 
 
 def asynchronize(Worker, Server):  # MC sends gradient to Server
