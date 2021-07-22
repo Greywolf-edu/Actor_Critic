@@ -57,7 +57,7 @@ class Worker(Server):  # Optimizer
             value_loss = self.value_loss_fn(value=value, reward=R)
             value_loss.backward(retain_graph=True)
 
-            tmp_diff = (R - value)
+            tmp_diff = -1/(R - value)
             policy_loss = self.policy_loss_fn(policy=policy, temporal_diff=tmp_diff.detach().numpy())
             policy_loss.backward(retain_graph=True)
 
@@ -107,3 +107,11 @@ if __name__ == "__main__":
     print(b.grad)
     print(a.grad)
     print(b.detach().numpy()[0])
+
+    #   a0,  a1,  a2
+    # [0.3, 0.3, 0.4] x x
+    # [0.1, 0.8, 0.1] x y
+    # 1. Pre-train Q
+    # 2. Fuzzy. (Heuristic) R => [B0, B1, B2] => softmax ()
+    # y = 0.8, y = y * 0.95, y < 0.01, y
+    # [0.2, 0.5, 0.3]
