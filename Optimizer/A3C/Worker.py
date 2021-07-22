@@ -3,7 +3,8 @@ import numpy as np
 import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
-    extract_state_tensor, charging_time_func, get_heuristic_policy, extract_state_tensor_v2
+    extract_state_tensor, charging_time_func, get_heuristic_policy, \
+    extract_state_tensor_v2, one_hot
 
 
 class Worker(Server):  # Optimizer
@@ -20,13 +21,22 @@ class Worker(Server):  # Optimizer
         self.alpha_H = para.A3C_alpha_heuristic
         self.theta_H = para.A3C_decay_heuristic
 
-        # self.k_step = para.A3C_k_step
-        self.state_record = []  # record states
-        self.reward_record = []  # record rewards
-        self.behavior_record = [] # record behavior
-        self.policy_record = [] # record policy
-
+        self.buffer = []
         self.action_space = [i for i in range(self.nb_action)]
+
+    def create_experience(self, state, action,
+                          policy_prob, behavior_prob,
+                          reward = None):
+        experience = {
+            "step": self.step,              # record step t
+            "reward": reward,               # record reward observe in this state
+            "state": state,                 # record state vector t
+            "action": action,               # record action at step t
+            "policy_prob": policy_prob,     # record policy prob(action t)
+            "behavior_prob": behavior_prob  # record behavior prob(action t)
+        }
+        self.step += 1
+        return experience
 
     def get_policy(self, state_vector):
         return self.actor_net(state_vector)
@@ -34,36 +44,37 @@ class Worker(Server):  # Optimizer
     def get_value(self, state_vector):
         return self.critic_net(state_vector)
 
-    def policy_loss_fn(self, policy, temporal_diff):
-        return - temporal_diff[0] * torch.sum(torch.log(policy)) #- self.entropy_loss_fn(policy)
+    def policy_loss_fn(self, policy, action, temporal_diff):
+        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
+                                                                index=action))) \
+               - self.entropy_loss_fn(policy)
 
     def entropy_loss_fn(self, policy):
         return - self.beta_entropy * torch.sum(policy * torch.log(policy))
 
     def value_loss_fn(self, value, reward):
-        return 1 / 2 * torch.pow(reward - value, 2)
+        return (1/2) * torch.pow(reward - value, 2)
 
     def accumulate_gradient(self):
-        assert len(self.state_record) == len(self.reward_record) + 1, \
-            "INVALID calling accumulate_gradient"
+        R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
+            else self.critic_net(self.buffer[-1]["state"])
 
-        R = 0 if TERMINAL_STATE(self.state_record[-1]) \
-            else self.critic_net(self.state_record[-1])
+        t = len(self.buffer) - 1        # i.e. (R,S,A) = [(S0,A0),(R1,S1,A1),(R2,S2,A2)]
+        for i in range(t):              # 0, 1
+            j = t - i             # 1, 0
+            R = self.buffer[j]["reward"] + self.gamma * R
 
-        t = len(self.reward_record)
-        for i in range(t):
-            j = (t - 1) - i
-            R = self.reward_record[j] + self.gamma * R
-
-            state_vector = self.state_record[j]
+            state_vector = self.buffer[j]["state"]
             value = self.critic_net(state_vector)
             policy = self.actor_net(state_vector)
 
             value_loss = self.value_loss_fn(value=value, reward=R)
             value_loss.backward(retain_graph=True)
 
-            tmp_diff = -1/(R - value)
-            policy_loss = self.policy_loss_fn(policy=policy, temporal_diff=tmp_diff.detach().numpy())
+            tmp_diff = R - value
+            policy_loss = self.policy_loss_fn(policy=policy,
+                                              temporal_diff=tmp_diff.detach().numpy(),
+                                              action=self.buffer[j]["action"])
             policy_loss.backward(retain_graph=True)
 
     def reset_grad(self):
@@ -71,15 +82,11 @@ class Worker(Server):  # Optimizer
         self.critic_net.zero_grad()
 
     def get_action(self, network=None, mc=None, time_stem=None):
-        # state_record = [S(t), S(t+1), S(t+2)]
-        # reward_record = [     R(t+1), R(t+2)]
-        if len(self.state_record) != 0:
+        R = None
+        if self.step != 0:
             R = reward_function(network)
-            self.reward_record.append(R)
 
         state_tensor = extract_state_tensor(self, network)
-        self.state_record.append(state_tensor)
-
         policy = self.get_policy(state_tensor)
         if torch.isnan(policy).any():
             FILE = open("debug.txt", "w")
@@ -90,12 +97,21 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
-        assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1"
+        # heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
+        # assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
 
-        behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+        # behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+        action = np.random.choice(self.action_space, p=policy.detach().numpy())
 
-        action = np.random.choice(self.action_space, p=behavior_policy.detach().numpy())
+        # record all transitioning and reward
+        self.buffer.append(
+            self.create_experience(
+                state=state_tensor, action=action,
+                policy_prob=policy[action], behavior_prob=None, #behavior_policy[action],
+                reward=R
+            )
+        )
+
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
@@ -103,7 +119,8 @@ class Worker(Server):  # Optimizer
 
 
 if __name__ == "__main__":
-    action_space = [1, 2, 3, 4]
+    action_space = torch.Tensor([1, 2, 3, 4])
+    print(action_space[1])
     # a = torch.Tensor(action_space)
     # print(a.detach().numpy())
 
@@ -117,13 +134,13 @@ if __name__ == "__main__":
     # print(b.grad)
     # print(a.grad)
     # print(b.detach().numpy()[0])
-    alpha_H = 0.8
-    a = torch.Tensor([0.1, 0.2, 0.3, 0.4])
-    b = np.array([4,3,1,2])
-    c = np.exp(b)/np.sum(np.exp(b))
-    d = (1 - alpha_H) * a + alpha_H * c
-    print(d)
-    print(np.random.choice(action_space, p=d.detach().numpy()))
+    # alpha_H = 0.8
+    # a = torch.Tensor([0.1, 0.2, 0.3, 0.4])
+    # b = np.array([4,3,1,2])
+    # c = np.exp(b)/np.sum(np.exp(b))
+    # d = (1 - alpha_H) * a + alpha_H * c
+    # print(d)
+    # print(np.random.choice(action_space, p=d.detach().numpy()))
 
 
 

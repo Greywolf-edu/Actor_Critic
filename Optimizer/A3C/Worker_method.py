@@ -134,14 +134,21 @@ def get_heuristic_policy(mc=None, Worker=None, network=None):
     return H_policy
 
 
+def one_hot(index, size):
+    one_hot_vector = np.zeros([size,1])
+    one_hot_vector[index] = 1
+    one_hot_vector = torch.Tensor(one_hot_vector)
+    one_hot_vector.requires_grad = False
+    return one_hot_vector
+
 def asynchronize(Worker, Server):  # MC sends gradient to Server
     """
     :param Worker: current MC's optimizer (self)
     :param Server: cloud
     This function perform asynchronize update to the cloud
     """
-    print(f"Worker id_{Worker.id} asynchronized with len(state, reward) = ({len(Worker.state_record)},{len(Worker.reward_record)})")
-    if len(Worker.state_record) > len(Worker.reward_record) > 0:
+    print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
+    if len(Worker.buffer) > 2:
         Worker.accumulate_gradient()
         networks = (Worker.actor_net, Worker.critic_net)
         update_gradient(Server, networks)
@@ -149,15 +156,12 @@ def asynchronize(Worker, Server):  # MC sends gradient to Server
         # clean gradient
         Worker.reset_grad()
         # clear record
-        Worker.reward_record.clear()
-        lastState = Worker.state_record[-1]
-        Worker.state_record.clear()
+        lastBuffer = Worker.buffer[-1]
+        Worker.buffer.clear()
         # restore current state for next use
-        Worker.state_record.append(lastState)
+        Worker.buffer.append(lastBuffer)
     else:
         print(f"Worker id_{Worker.id} has nothing to asynchronize")
-        Worker.reward_record.clear()
-        Worker.state_record.clear()
 
 
 def all_asynchronize(MCs, Server):
