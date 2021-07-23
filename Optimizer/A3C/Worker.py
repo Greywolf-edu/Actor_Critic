@@ -4,7 +4,7 @@ import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, get_heuristic_policy, \
-    extract_state_tensor_v2, one_hot, tesor2value
+    extract_state_tensor_v2, one_hot, tensor2value
 
 import csv
 
@@ -43,7 +43,7 @@ class Worker(Server):  # Optimizer
             if self.step == 0:
                 dumpfile_writer.writerow(experience.keys())
             dumpfile_writer.writerow([
-                self.step, reward, tesor2value(state), action, tesor2value(policy_prob), behavior_prob
+                self.step, reward, tensor2value(state), action, tensor2value(policy_prob), tensor2value(behavior_prob)
             ])
 
         self.step += 1
@@ -88,7 +88,7 @@ class Worker(Server):  # Optimizer
 
             tmp_diff = R - value
             policy_loss = self.policy_loss_fn(policy=policy,
-                                              temporal_diff=tesor2value(tmp_diff),
+                                              temporal_diff=tensor2value(tmp_diff),
                                               action=self.buffer[j]["action"]) * mu
 
             entropy_loss = self.entropy_loss_fn(policy=policy)
@@ -98,7 +98,7 @@ class Worker(Server):  # Optimizer
             mu /= M[j]
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{timestep}\t{self.id}\t{tesor2value(tmp_diff)[0]}\t{tesor2value(policy_loss)}\t{tesor2value(entropy_loss)}\t{tesor2value(value_loss)[0]}\n")
+                    dumpfile.write(f"{timestep}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
@@ -113,9 +113,9 @@ class Worker(Server):  # Optimizer
         policy = self.get_policy(state_tensor)
         if torch.isnan(policy).any():
             FILE = open("debug.txt", "w")
-            FILE.write(np.array2string(tesor2value(state_tensor)))
+            FILE.write(np.array2string(tensor2value(state_tensor)))
             FILE.write("\n")
-            FILE.write(np.array2string(tesor2value(policy)))
+            FILE.write(np.array2string(tensor2value(policy)))
             FILE.close()
             print("Error Nan policy")
             exit(100)
@@ -124,7 +124,7 @@ class Worker(Server):  # Optimizer
         assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
-        action = np.random.choice(self.action_space, p=tesor2value(policy))
+        action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
 
         # record all transitioning and reward
         self.buffer.append(
@@ -144,7 +144,7 @@ class Worker(Server):  # Optimizer
 
 if __name__ == "__main__":
     action_space = torch.Tensor([1, 2, 3, 4])
-    print(tesor2value(action_space[1]))
+    # print(tensor2value(action_space[1]))
     # a = torch.Tensor(action_space)
     # print(a[1])
 
@@ -166,6 +166,9 @@ if __name__ == "__main__":
     # print(d)
     # print(np.random.choice(action_space, p=d.detach().numpy()))
 
+    b = [1,2,3,4,5]
+    c = torch.ones_like(torch.Tensor(b))
+    print(c)
 
 
 

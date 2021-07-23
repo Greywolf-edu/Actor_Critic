@@ -130,9 +130,9 @@ def charging_time_func(mc=None, network=None, charging_pos_id=None, time_stem=0,
 
 # TODO: impelement heuristic policy (Nguyen Thanh Long)
 def get_heuristic_policy(mc=None, Worker=None, network=None):
-    H_policy = None # numpy array of size = #nb_action
-
-    return H_policy
+    H_policy = torch.ones_like(torch.Tensor(Worker.action_space)) * 1/Worker.nb_action
+    H_policy.requires_grad = False
+    return H_policy # torch tensor size = #nb_action
 
 
 def one_hot(index, size):
@@ -143,7 +143,7 @@ def one_hot(index, size):
     return one_hot_vector
 
 
-def tesor2value(tensor):
+def tensor2value(tensor):
     return tensor.detach().numpy()
 
 
