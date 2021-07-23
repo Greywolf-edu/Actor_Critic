@@ -13,6 +13,9 @@ from ast import literal_eval
 import csv
 from scipy.stats import sem, t, tmean
 
+import os
+os.system("rm log/weight_record/*")
+os.system("rm log/Worker*")
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
 df = pd.read_csv("data/" + experiment_type + ".csv")

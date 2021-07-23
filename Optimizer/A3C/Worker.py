@@ -72,7 +72,7 @@ class Worker(Server):  # Optimizer
 
         t = len(self.buffer) - 1        # i.e. (R,S,A) = [(S0,A0),(R1,S1,A1),(R2,S2,A2)]
         for i in range(t):              # 0, 1
-            j = t - i             # 1, 0
+            j = t - i                   # 1, 0
             R = self.buffer[j]["reward"] + self.gamma * R
 
             state_vector = self.buffer[j]["state"]
