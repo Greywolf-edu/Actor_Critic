@@ -4,7 +4,7 @@ import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, get_heuristic_policy, \
-    extract_state_tensor_v2, one_hot
+    extract_state_tensor_v2, one_hot, tesor2value
 
 import csv
 
@@ -43,7 +43,7 @@ class Worker(Server):  # Optimizer
             if self.step == 0:
                 dumpfile_writer.writerow(experience.keys())
             dumpfile_writer.writerow([
-                self.step, reward, state.detach().numpy(), action, policy_prob.detach().numpy(), behavior_prob
+                self.step, reward, tesor2value(state), action, tesor2value(policy_prob), behavior_prob
             ])
 
         self.step += 1
@@ -65,12 +65,18 @@ class Worker(Server):  # Optimizer
         return (1/2) * torch.pow(reward - value, 2)
 
     def accumulate_gradient(self, timestep=None, debug=True):
+        # i.e. (R,S,A) = [(R0,S0,A0),(R1,S1,A1),(R2,S2,A2)]
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
-            else self.critic_net(self.buffer[-1]["state"])
+            else self.critic_net(self.buffer[-1]["state"])      # R[2]
 
-        t = len(self.buffer) - 1        # i.e. (R,S,A) = [(S0,A0),(R1,S1,A1),(R2,S2,A2)]
+        t = len(self.buffer) - 1        # t = 2
+        M = [self.buffer[i]["policy_prob"] / self.buffer[i]["behavior_prob"] for i in range(t)]
+        mu = 1
+        for i in range(t):              # mu = pi(A0|S0)/b(A0|S0) * pi(A1|S1)/b(A1|S1)
+            mu *= M[i]
+
         for i in range(t):              # 0, 1
-            j = t - i                   # 2, 1
+            j = t - 1 - i               # 1, 0
             R = self.buffer[j]["reward"] + self.gamma * R
 
             state_vector = self.buffer[j]["state"]
@@ -82,22 +88,24 @@ class Worker(Server):  # Optimizer
 
             tmp_diff = R - value
             policy_loss = self.policy_loss_fn(policy=policy,
-                                              temporal_diff=tmp_diff.detach().numpy(),
-                                              action=self.buffer[j]["action"])
+                                              temporal_diff=tesor2value(tmp_diff),
+                                              action=self.buffer[j]["action"]) * mu
+
             entropy_loss = self.entropy_loss_fn(policy=policy)
             policy_total_loss = policy_loss + entropy_loss
             policy_total_loss.backward(retain_graph=True)
 
+            mu /= M[j]
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{timestep}\t{self.id}\t{tmp_diff.detach().numpy()[0]}\t{policy_loss.detach().numpy()}\t{entropy_loss.detach().numpy()}\t{value_loss.detach().numpy()[0]}\n")
+                    dumpfile.write(f"{timestep}\t{self.id}\t{tesor2value(tmp_diff)[0]}\t{tesor2value(policy_loss)}\t{tesor2value(entropy_loss)}\t{tesor2value(value_loss)[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
         self.critic_net.zero_grad()
 
     def get_action(self, network=None, mc=None, time_stem=None):
-        R = None
+        R = 0
         if self.step != 0:
             R = reward_function(network)
 
@@ -105,9 +113,9 @@ class Worker(Server):  # Optimizer
         policy = self.get_policy(state_tensor)
         if torch.isnan(policy).any():
             FILE = open("debug.txt", "w")
-            FILE.write(np.array2string(state_tensor.detach().numpy()))
+            FILE.write(np.array2string(tesor2value(state_tensor)))
             FILE.write("\n")
-            FILE.write(np.array2string(policy.detach().numpy()))
+            FILE.write(np.array2string(tesor2value(policy)))
             FILE.close()
             print("Error Nan policy")
             exit(100)
@@ -116,7 +124,7 @@ class Worker(Server):  # Optimizer
         # assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         # behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
-        action = np.random.choice(self.action_space, p=policy.detach().numpy())
+        action = np.random.choice(self.action_space, p=tesor2value(policy))
 
         # record all transitioning and reward
         self.buffer.append(
@@ -133,11 +141,11 @@ class Worker(Server):  # Optimizer
         return action, charging_time_func(mc=mc, network=network, charging_pos_id=action, time_stem=time_stem)
 
 
-# if __name__ == "__main__":
-    # action_space = torch.Tensor([1, 2, 3, 4])
-    # print(action_space[1])
+if __name__ == "__main__":
+    action_space = torch.Tensor([1, 2, 3, 4])
+    print(tesor2value(action_space[1]))
     # a = torch.Tensor(action_space)
-    # print(a.detach().numpy())
+    # print(a[1])
 
     # b = torch.Tensor([3])
     # b.requires_grad = True
