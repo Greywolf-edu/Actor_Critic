@@ -50,40 +50,31 @@ def extract_state_tensor(worker, network):
     charge_pos_tensor = torch.flatten(charge_pos_tensor)  # flatten (3 x nb_mc - 3)
     charge_pos_tensor.requires_grad = False
 
-    # nodes_info = []
-    # for each_node in network.node:
-    #     x, y = each_node.location
-    #     E = each_node.energy  # current energy
-    #     e = each_node.avg_energy  # consumption rate
-    #     nodes_info.append([x, y, E, e])
-    #
-    # nodes_info_tensor = torch.Tensor(nodes_info)
-    # nodes_info_tensor = torch.flatten(nodes_info_tensor)  # 4 x nb_node
-    # nodes_info_tensor.requires_grad = False
-
     partition_info = []
-    r = 10
-    for pos in charge_pos:
+    for i, pos in enumerate(charge_pos):
         x_charge_pos, y_charge_pos = pos
         min_E = float('inf')
         max_e = float('-inf')
-        for each_node in network.node:
-            if each_node.energy > 0 and torch.dist(torch.tensor(each_node.location, dtype=torch.float),
-                                                    torch.tensor(pos, dtype=torch.float)) <= r:
-                if each_node.energy < min_E:
-                    min_E = each_node.energy
-                if each_node.avg_energy > max_e:
-                    max_e = each_node.avg_energy
+        for index_node in network.index_node_in_cluster[i]:
+            node = network.node[index_node]
+            if node.energy > 0:
+                if node.energy < min_E:
+                    min_E = node.energy
+                if node.avg_energy > max_e:
+                    max_e = node.avg_energy
+        if min_E == float('inf'):
+            min_E = 0
+            max_e = 0
+
         partition_info.append([x_charge_pos, y_charge_pos, min_E, max_e])
 
     partition_info_tensor = torch.Tensor(partition_info)
-    partition_info_tensor = torch.flatten(partition_info_tensor)  # 3 x nb_action
+    partition_info_tensor = torch.flatten(partition_info_tensor)  # 4 x nb_action
     partition_info_tensor.requires_grad = False
 
-    # state = torch.cat([MC_info_tensor, charge_pos_tensor, nodes_info_tensor])
     state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info_tensor])
     # return Tensor form of the state
-    return state  # 3 x nb_mc + 4 x nb_charing_pos
+    return state  # 3 x nb_mc + 4 x nb_charging_pos
 
 
 # TODO: get state from network (new - Nguyen Thanh Long)

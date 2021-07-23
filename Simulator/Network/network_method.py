@@ -53,4 +53,11 @@ def network_partition(network=None):
         charging_pos.append((int(pos[0]), int(pos[1])))
     charging_pos.append(para.depot)
     print(charging_pos)
+
+    # network.index_node_in_cluster
+    for i in range(network.nb_charging_pos):
+        network.index_node_in_cluster.append([index for index, label in enumerate(kmeans.labels_) if label == i])
+
+    network.index_node_in_cluster.append([])  #depot
+
     return charging_pos

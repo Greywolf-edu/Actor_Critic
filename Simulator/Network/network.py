@@ -22,6 +22,7 @@ class Network:
         self.nb_charging_pos = nb_charging_pos
         self.active = False
         self.package_lost = False
+        self.index_node_in_cluster = []  # index_node_in_cluster[index] = list of id Node \in cluster index
 
         self.Server = server
         self.T = para.A3C_synchronize_T
