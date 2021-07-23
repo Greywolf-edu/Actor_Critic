@@ -9,16 +9,15 @@ def synchronize(server, mc_list):
     :param server: cloud
     :param mc_list: list of MC
     """
-    print_actor_weights(server)
     with open("log/weight_record/actor_param.txt", "a+") as dumpfile:
-        dumpfile.write("End of one step\n")
+        dumpfile.write("One update step\n")
 
     for MC in mc_list:
         MC.optimizer.actor_net.load_state_dict(server.actor_net.state_dict())
         MC.optimizer.critic_net.load_state_dict(server.critic_net.state_dict())
 
 
-def update_gradient(server, MC_networks):
+def update_gradient(server, MC_networks, debug=True):
     """
     :param server: cloud
     :param MC_networks: is ONE MC's networks, a tuple of (actor, critic)
@@ -28,12 +27,17 @@ def update_gradient(server, MC_networks):
     for serverParam, MCParam in \
             zip(server.actor_net.parameters(), MC_actor_net.parameters()):
         if not torch.isnan(MCParam.grad).any():
+            if debug:
+                debug_weights_update(serverParam.data, MCParam.grad)
             serverParam.data -= server.actor_lr * MCParam.grad
+
 
     # Update server's critic network
     for serverParam, MCParam in \
             zip(server.critic_net.parameters(), MC_critic_net.parameters()):
         if not torch.isnan(MCParam.grad).any():
+            if debug:
+                debug_weights_update(serverParam.data, MCParam.grad)
             serverParam.data -= server.critic_lr * MCParam.grad
 
 
@@ -42,10 +46,9 @@ def zero_net_weights(net):
         net_param.data = torch.rand_like(net_param.data) * random.gauss(0,0.01)
 
 
-def print_actor_weights(Server):
+def debug_weights_update(param_data, grad):
     with open("log/weight_record/actor_param.txt", "a+") as dumpfile:
-        for actor_param in Server.actor_net.parameters():
-            dumpfile.write(str(torch.sum(actor_param.data)) + "\n")
+        dumpfile.write(str(torch.sum(param_data)) + "\t" + str(torch.sum(grad)) + "\n")
 
 
 if __name__ == "__main__":

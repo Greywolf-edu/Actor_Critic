@@ -66,7 +66,7 @@ class Worker(Server):  # Optimizer
     def value_loss_fn(self, value, reward):
         return (1/2) * torch.pow(reward - value, 2)
 
-    def accumulate_gradient(self):
+    def accumulate_gradient(self, debug=True):
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
             else self.critic_net(self.buffer[-1]["state"])
 
@@ -87,6 +87,10 @@ class Worker(Server):  # Optimizer
                                               temporal_diff=tmp_diff.detach().numpy(),
                                               action=self.buffer[j]["action"])
             policy_loss.backward(retain_graph=True)
+
+            if debug:
+                with open("log/weight_record/loss.txt", "a+") as dumpfile:
+                    dumpfile.write(f"Worker_{self.id}\t P_loss = {policy_loss.detach().numpy()}\t V_loss = {value_loss.detach().numpy()}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
@@ -130,20 +134,20 @@ class Worker(Server):  # Optimizer
 
 
 if __name__ == "__main__":
-    action_space = torch.Tensor([1, 2, 3, 4])
-    print(action_space[1])
+    # action_space = torch.Tensor([1, 2, 3, 4])
+    # print(action_space[1])
     # a = torch.Tensor(action_space)
     # print(a.detach().numpy())
 
-    # b = torch.Tensor([3])
-    # b.requires_grad = True
-    # a = torch.Tensor([4])
-    # a.requires_grad = True
-    # c = 3*b + a
-    # c.backward(retain_graph=True)
-    # c.backward(retain_graph=True)
-    # print(b.grad)
-    # print(a.grad)
+    b = torch.Tensor([3])
+    b.requires_grad = True
+    a = torch.Tensor([4])
+    a.requires_grad = True
+    c = 3*b + a
+    c.backward(retain_graph=True)
+    c.backward(retain_graph=True)
+    print(b.grad)
+    print(a.grad)
     # print(b.detach().numpy()[0])
     # alpha_H = 0.8
     # a = torch.Tensor([0.1, 0.2, 0.3, 0.4])

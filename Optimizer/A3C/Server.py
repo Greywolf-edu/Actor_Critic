@@ -9,13 +9,13 @@ class Server(nn.Module):
 
         self.actor_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=256, out_features=512),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=512, out_features=256),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=256, out_features=128),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=128, out_features=nb_action),
             nn.Softmax()
         )
@@ -23,13 +23,13 @@ class Server(nn.Module):
 
         self.critic_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=256, out_features=512),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=512, out_features=256),
-            nn.ReLU(),
+            nn.Sigmoid(),
             nn.Linear(in_features=256, out_features=1),
-            nn.ReLU()
+            nn.Sigmoid()
         )
         zero_net_weights(self.critic_net)
 
