@@ -4,7 +4,7 @@ from Optimizer.A3C.Worker import Worker
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
 from Simulator.Mobile_Charger.mobile_charger import MobileCharger
-from Simulator.parameter import SIM_duration
+from Simulator.parameter import SIM_duration, NODE_e_thresh_ratio
 
 import random
 import pandas as pd
@@ -55,11 +55,11 @@ for nb_run in range(1):
     for i in range(len(node_pos)):
         location = node_pos[i]
         node = Node(location=location, com_ran=com_ran, energy=energy, energy_max=energy_max, id=i,
-                    energy_thresh=0.4 * energy, prob=prob)
+                    energy_thresh= NODE_e_thresh_ratio * energy, prob=prob)
         list_node.append(node)
 
     # Global optimizer
-    nb_state_feature = nb_mc*3 + len(list_node)*4
+    nb_state_feature = nb_mc*3 + (clusters + 1)*4
     global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
     mc_list = []
     optimizer_list = []

@@ -81,7 +81,7 @@ def extract_state_tensor(worker, network):
     partition_info_tensor.requires_grad = False
 
     # state = torch.cat([MC_info_tensor, charge_pos_tensor, nodes_info_tensor])
-    state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info])
+    state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info_tensor])
     # return Tensor form of the state
     return state  # 3 x nb_mc + 4 x nb_charing_pos
 
