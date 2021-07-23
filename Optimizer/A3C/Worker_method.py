@@ -163,6 +163,10 @@ def one_hot(index, size):
     return one_hot_vector
 
 
+def tesor2value(tensor):
+    return tensor.detach().numpy()
+
+
 def asynchronize(Worker, Server, time_step=None):  # MC sends gradient to Server
     """
     :param Worker: current MC's optimizer (self)
