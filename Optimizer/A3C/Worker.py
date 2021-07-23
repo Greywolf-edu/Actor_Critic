@@ -57,11 +57,10 @@ class Worker(Server):  # Optimizer
 
     def policy_loss_fn(self, policy, action, temporal_diff):
         return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
-                                                                index=action))) \
-               - self.entropy_loss_fn(policy)
+                                                                index=action)))
 
     def entropy_loss_fn(self, policy):
-        return - self.beta_entropy * torch.sum(policy * torch.log(policy))
+        return self.beta_entropy * torch.sum(policy * torch.log(policy))
 
     def value_loss_fn(self, value, reward):
         return (1/2) * torch.pow(reward - value, 2)
@@ -72,7 +71,7 @@ class Worker(Server):  # Optimizer
 
         t = len(self.buffer) - 1        # i.e. (R,S,A) = [(S0,A0),(R1,S1,A1),(R2,S2,A2)]
         for i in range(t):              # 0, 1
-            j = t - i                   # 1, 0
+            j = t - i                   # 2, 1
             R = self.buffer[j]["reward"] + self.gamma * R
 
             state_vector = self.buffer[j]["state"]
@@ -86,11 +85,13 @@ class Worker(Server):  # Optimizer
             policy_loss = self.policy_loss_fn(policy=policy,
                                               temporal_diff=tmp_diff.detach().numpy(),
                                               action=self.buffer[j]["action"])
-            policy_loss.backward(retain_graph=True)
+            entropy_loss = self.entropy_loss_fn(policy=policy)
+            policy_total_loss = policy_loss + entropy_loss
+            policy_total_loss.backward(retain_graph=True)
 
             if debug:
                 with open("log/weight_record/loss.txt", "a+") as dumpfile:
-                    dumpfile.write(f"Worker_{self.id}\t P_loss = {policy_loss.detach().numpy()}\t V_loss = {value_loss.detach().numpy()}\n")
+                    dumpfile.write(f"Worker_{self.id}\t P_loss = {policy_loss.detach().numpy()}\t E_loss = {entropy_loss.detach().numpy()}\t V_loss = {value_loss.detach().numpy()[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
