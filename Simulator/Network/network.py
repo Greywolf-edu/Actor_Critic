@@ -16,7 +16,8 @@ class Network:
         self.mc_list = mc_list
         self.target = target
         self.charging_pos = []
-        self.request_list = []
+        self.request_list = []  # Full list of requesting massages: ['id', 'energy', 'avg_energy',
+        # 'energy_estimate', 'time']
         self.request_id = []
         self.package_size = package_size
         self.nb_charging_pos = nb_charging_pos

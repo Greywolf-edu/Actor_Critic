@@ -10,7 +10,7 @@ import csv
 
 
 class Worker(Server):  # Optimizer
-    def __init__(self, Server_object, name, id):
+    def __init__(self, Server_object, name, id, theta):
         super(Worker, self).__init__(nb_state_feature=Server_object.nb_state_feature,
                                      nb_action=Server_object.nb_action,
                                      name=name)
@@ -22,13 +22,14 @@ class Worker(Server):  # Optimizer
         self.gamma = para.A3C_gamma
         self.alpha_H = para.A3C_alpha_heuristic
         self.theta_H = para.A3C_decay_heuristic
+        self.charging_time_theta = theta  # charging time function hyper-parameter
 
         self.buffer = []
         self.action_space = [i for i in range(self.nb_action)]
 
     def create_experience(self, state, action,
                           policy_prob, behavior_prob,
-                          reward = None):
+                          reward=None):
         experience = {
             "step": self.step,              # record step t
             "reward": reward,               # record reward observe in this state
@@ -56,7 +57,8 @@ class Worker(Server):  # Optimizer
         return self.critic_net(state_vector)
 
     def policy_loss_fn(self, policy, action, temporal_diff):
-        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,index=action)))
+        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
+                                                                                       index=action)))
 
     def entropy_loss_fn(self, policy):
         return self.beta_entropy * torch.sum(policy * torch.log(policy))
@@ -98,7 +100,8 @@ class Worker(Server):  # Optimizer
             mu /= M[j]
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{timestep}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
+                    dumpfile.write(f"{timestep}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t"
+                                   f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
@@ -120,7 +123,7 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
+        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stem=time_stem)
         assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
@@ -139,7 +142,8 @@ class Worker(Server):  # Optimizer
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
-        return action, charging_time_func(mc=mc, network=network, charging_pos_id=action, time_stem=time_stem)
+        return action, charging_time_func(mc=mc, net=network, action_id=action, time_stem=time_stem,
+                                          theta=self.charging_time_theta)
 
 
 if __name__ == "__main__":

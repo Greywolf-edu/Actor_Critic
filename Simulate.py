@@ -14,6 +14,7 @@ import csv
 from scipy.stats import sem, t, tmean
 
 import os
+
 os.system("rm log/weight_record/*")
 os.system("rm log/Worker*")
 with open("log/weight_record/loss.csv", "w") as dumpfile:
@@ -39,7 +40,7 @@ result.writeheader()
 com_ran = df.commRange[experiment_index]
 prob = df.freq[experiment_index]
 nb_mc = df.nb_mc[experiment_index]
-alpha = df.q_alpha[experiment_index]
+theta = df.q_alpha[experiment_index]
 clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
@@ -55,18 +56,18 @@ for nb_run in range(1):
     for i in range(len(node_pos)):
         location = node_pos[i]
         node = Node(location=location, com_ran=com_ran, energy=energy, energy_max=energy_max, id=i,
-                    energy_thresh= NODE_e_thresh_ratio * energy, prob=prob)
+                    energy_thresh=NODE_e_thresh_ratio * energy, prob=prob)
         list_node.append(node)
 
     # Global optimizer
-    nb_state_feature = nb_mc*3 + (clusters + 1)*4
+    nb_state_feature = nb_mc * 3 + (clusters + 1) * 4
     global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
     mc_list = []
     optimizer_list = []
     for id in range(nb_mc):
         # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
-        optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id)
-        optimizer_list.append(optimizer) # List worker
+        optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id, theta=theta)
+        optimizer_list.append(optimizer)  # List worker
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
                            e_self_charge=df.e_mc[experiment_index], velocity=df.velocity[experiment_index],
@@ -77,7 +78,7 @@ for nb_run in range(1):
                   server=global_Optimizer, package_size=package_size, nb_charging_pos=clusters)
     print(
         "experiment {} #{}:\n\tnode: {}, target: {}, prob: {}, mc: {}, alpha: {}, cluster: {}, package_size: {}".format(
-            experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, alpha, clusters,
+            experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, theta, clusters,
             package_size))
     file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
     try:
