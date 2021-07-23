@@ -66,7 +66,7 @@ class Worker(Server):  # Optimizer
     def value_loss_fn(self, value, reward):
         return (1/2) * torch.pow(reward - value, 2)
 
-    def accumulate_gradient(self, timestep=None, debug=True):
+    def accumulate_gradient(self, time_step=None, debug=True):
         # i.e. (R,S,A) = [(R0,S0,A0),(R1,S1,A1),(R2,S2,A2)]
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
             else self.critic_net(self.buffer[-1]["state"])      # R[2]
@@ -100,14 +100,14 @@ class Worker(Server):  # Optimizer
             mu /= M[j]
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{timestep}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t"
+                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
         self.critic_net.zero_grad()
 
-    def get_action(self, network=None, mc=None, time_stem=None):
+    def get_action(self, network=None, mc=None, time_stamp=None):
         R = 0
         if self.step != 0:
             R = reward_function(network)
@@ -123,8 +123,10 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stem=time_stem)
-        assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
+        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp)
+        print(float(torch.sum(heuristic_policy)))
+        print(float(torch.sum(heuristic_policy)) == 1)
+        assert float(torch.sum(heuristic_policy)) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
@@ -133,7 +135,7 @@ class Worker(Server):  # Optimizer
         self.buffer.append(
             self.create_experience(
                 state=state_tensor, action=action,
-                policy_prob=policy[action], behavior_prob= behavior_policy[action],
+                policy_prob=policy[action], behavior_prob=behavior_policy[action],
                 reward=R
             )
         )
@@ -142,7 +144,7 @@ class Worker(Server):  # Optimizer
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
-        return action, charging_time_func(mc=mc, net=network, action_id=action, time_stem=time_stem,
+        return action, charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
                                           theta=self.charging_time_theta)
 
 

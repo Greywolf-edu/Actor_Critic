@@ -1,4 +1,4 @@
-# Wireless Rechargable Sensors Network
+# Wireless Rechargeable Sensors Network
 ## Distributed Actor_Critic based
 
 - Implementation of a distributed Q_learning-based charging strategy with Kmeans net-partition on WRSN with multiple Mobile Chargers.
@@ -26,7 +26,7 @@ experiment_index:
 > `target` experiments must be *reconstructed* to match `node` experiments range if modified 
 ## Results:
 
-- All expriment results are updated at this [sheet](https://husteduvn-my.sharepoint.com/:x:/g/personal/long_nt183586_sis_hust_edu_vn/EVypWNIGoz1GkK7v6QYDmccBJKAzweAXJr8ZhFF94kYgnw?e=Jrwb9k).
+- All experiment results are updated at this [sheet](https://husteduvn-my.sharepoint.com/:x:/g/personal/long_nt183586_sis_hust_edu_vn/EVypWNIGoz1GkK7v6QYDmccBJKAzweAXJr8ZhFF94kYgnw?e=Jrwb9k).
 
 ## Requirements:
 - `pandas==1.1.3`  

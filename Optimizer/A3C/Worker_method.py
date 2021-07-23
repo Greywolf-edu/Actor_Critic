@@ -1,5 +1,6 @@
 import torch
 from scipy.spatial import distance
+from torch.nn import Softmax
 import Simulator.parameter as para
 import numpy as np
 from Optimizer.A3C.Server_method import update_gradient
@@ -83,12 +84,12 @@ def extract_state_tensor_v2(worker, net):
     return None
 
 
-def charging_time_func(mc=None, net=None, action_id=None, time_stem=0, theta=0.1):
+def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.1):
     """
     :param mc: mobile charger
     :param net: network
     :param action_id: index of charging position
-    :param time_stem: current time stamp
+    :param time_stamp: current time stamp
     :param theta: hyper-parameter
     :return: duration time which the MC will stand charging for nodes
     """
@@ -98,15 +99,15 @@ def charging_time_func(mc=None, net=None, action_id=None, time_stem=0, theta=0.1
     s1 = []  # list of node in request list which has positive charge
     s2 = []  # list of node not in request list which has negative charge
     # print(charging_position, len(net.request_id))
-    for request_node_id in net.request_id:
-        node = net.node[request_node_id]
+    for requesting_node in net.request_id:
+        node = net.node[requesting_node]
         d = distance.euclidean(charging_position, node.location)
         p = para.alpha / (d + para.beta) ** 2
         p1 = 0
         for other_mc in net.mc_list:
             if other_mc.id != mc.id and other_mc.get_status() == "charging":
                 d = distance.euclidean(other_mc.current, node.location)
-                p1 += (para.alpha / (d + para.beta) ** 2) * (other_mc.end_time - time_stem)
+                p1 += (para.alpha / (d + para.beta) ** 2) * (other_mc.end_time - time_stamp)
         if node.energy - time_move * node.avg_energy + p1 < energy_min and p - node.avg_energy > 0:
             s1.append((node.id, p, p1))
         if node.energy - time_move * node.avg_energy + p1 > energy_min and p - node.avg_energy < 0:
@@ -141,43 +142,50 @@ def charging_time_func(mc=None, net=None, action_id=None, time_stem=0, theta=0.1
 
 
 # TODO: implement heuristic policy (Nguyen Thanh Long)
-def get_heuristic_policy(net=None, mc=None, worker=None, time_stem=0):
+def get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     energy_factor = torch.ones_like(torch.Tensor(worker.action_space))
     priority_factor = torch.ones_like(torch.Tensor(worker.action_space))
     target_monitoring_factor = torch.ones_like(torch.Tensor(worker.action_space))
     self_charging_factor = torch.ones_like(torch.Tensor(worker.action_space))
     for action_id in worker.action_space:
-        temp = heuristic_function(net=net, mc=mc, optimizer=worker, action_id=action_id, time_stem=time_stem)
+        temp = heuristic_function(net=net, mc=mc, optimizer=worker, action_id=action_id, time_stamp=time_stamp)
         energy_factor[action_id] = temp[0]
         priority_factor[action_id] = temp[1]
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
-    energy_factor = energy_factor/torch.sum(energy_factor)
-    priority_factor = priority_factor/torch.sum(priority_factor)
-    target_monitoring_factor = target_monitoring_factor/torch.sum(target_monitoring_factor)
-    self_charging_factor = self_charging_factor/torch.sum(self_charging_factor)
+    energy_factor = energy_factor / torch.sum(energy_factor)
+    priority_factor = priority_factor / torch.sum(priority_factor)
+    target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor)
+    self_charging_factor = self_charging_factor / torch.sum(self_charging_factor)
     H_policy = energy_factor + priority_factor + target_monitoring_factor - self_charging_factor
-    H_policy = torch.softmax(H_policy, 0)
+    print(H_policy)
+    softmax = Softmax(dim=0)
+    H_policy = softmax(H_policy)
+    print((float(torch.sum(H_policy))), H_policy.size())
     H_policy.requires_grad = False
     return H_policy  # torch tensor size = #nb_action
 
 
-def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stem=0, receive_func=find_receiver):
+def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stamp=0, receive_func=find_receiver):
     if action_id == optimizer.nb_action - 1:
         return 0, 0, 0, 0
     theta = optimizer.charging_time_theta
-    charging_time = charging_time_func(mc, net, action_id=action_id, time_stem=time_stem,
+    charging_time = charging_time_func(mc, net, action_id=action_id, time_stamp=time_stamp,
                                        theta=theta)
     w, nb_target_alive = get_weight(net=net, mc=mc, action_id=action_id, charging_time=charging_time,
                                     receive_func=receive_func)
     p = get_charge_per_sec(net=net, action_id=action_id)
     p_hat = p / np.sum(p)
+    p_total = get_total_charge_per_sec(net=net, action_id=action_id)
     E = np.asarray([net.node[request["id"]].energy for request in net.request_list])
     e = np.asarray([request["avg_energy"] for request in net.request_list])
     third = nb_target_alive / len(net.target)
     second = np.sum(w * p_hat)
     first = np.sum(e * p / E)
-    forth = (mc.capacity - (mc.energy - charging_time*p))/mc.capacity
+    forth = (mc.capacity - (mc.energy - charging_time * p_total)) / mc.capacity
+    # print('At {}s, HF for action {}: {}, {}, {}, {}'.format(time_stamp, action_id, first, second, third, forth))
+    if mc.energy - charging_time * p_total < 0:
+        return 0, 0, 0, 1
     return first, second, third, forth
 
 
@@ -187,13 +195,13 @@ def get_weight(net, mc, action_id, charging_time, receive_func=find_receiver):
     time_move = distance.euclidean(mc.current,
                                    net.charging_pos[action_id]) / mc.velocity
     list_dead = []
-    w = [0 for _ in net.list_request]
-    for request_id, request in enumerate(net.request_id):
+    w = [0 for _ in net.request_list]
+    for request_id, request in enumerate(net.request_list):
         temp = (net.node[request["id"]].energy - time_move * request["avg_energy"]) + (
                 p[request_id] - request["avg_energy"]) * charging_time
         if temp < 0:
             list_dead.append(request["id"])
-    for request_id, request in enumerate(net.request_id):
+    for request_id, request in enumerate(net.request_list):
         nb_path = 0
         for path in all_path:
             if request["id"] in path:
@@ -212,7 +220,14 @@ def get_charge_per_sec(net=None, action_id=None):
     return np.asarray(
         [para.alpha / (distance.euclidean(net.node[request["id"]].location,
                                           net.charging_pos[action_id]) + para.beta) ** 2 for
-         request in net.list_request])
+         request in net.request_list])
+
+
+def get_total_charge_per_sec(net=None, action_id=None):
+    p = np.asarray([para.alpha / (distance.euclidean(node.location,
+                                                     net.charging_pos[action_id]) + para.beta) ** 2 for
+                    node in net.node])
+    return np.sum(p)
 
 
 def get_path(net, sensor_id, receive_func=find_receiver):
@@ -254,7 +269,7 @@ def asynchronize(Worker, Server, time_step=None):  # MC sends gradient to Server
     """
     print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
     if len(Worker.buffer) >= 2:
-        Worker.accumulate_gradient(timestep=time_step)
+        Worker.accumulate_gradient(time_step=time_step)
         networks = (Worker.actor_net, Worker.critic_net)
         update_gradient(Server, networks)
 

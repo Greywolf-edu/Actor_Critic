@@ -35,7 +35,7 @@ def count_package_function(net):
     return count
 
 
-def network_partition(network=None):
+def Kmeans_network_clustering(network=None):
     X = []
     Y = []
     for node in network.node:

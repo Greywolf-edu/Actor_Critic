@@ -3,7 +3,8 @@ import csv
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, network_partition
+from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, \
+    Kmeans_network_clustering
 from Optimizer.A3C.Server_method import synchronize
 from Optimizer.A3C.Worker_method import all_asynchronize
 
@@ -47,7 +48,7 @@ class Network:
                     queue.append(neighbor_id)
             queue.pop(0)
 
-    def partition(self, func=network_partition):
+    def set_charging_pos(self, func=Kmeans_network_clustering):
         self.charging_pos = func(self)
         # for mc in self.mc_list:
         #     mc.optimizer.update_charging_pos(self.charging_pos)
@@ -84,7 +85,7 @@ class Network:
                     node.set_check_point(t)
         if self.active:
             for mc in self.mc_list:
-                mc.run(net=self, time_stem=t)
+                mc.run(net=self, time_stamp=t)
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):
@@ -111,7 +112,7 @@ class Network:
 
             ######################################
             if t == para.SIM_partition_time:
-                self.partition()
+                self.set_charging_pos()
             ######################################
 
             state = self.run_per_second(t)
