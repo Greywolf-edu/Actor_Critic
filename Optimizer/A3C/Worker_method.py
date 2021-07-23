@@ -135,13 +135,14 @@ def get_heuristic_policy(mc=None, Worker=None, network=None):
 
 
 def one_hot(index, size):
-    one_hot_vector = np.zeros([size,1])
+    one_hot_vector = np.zeros(size)
     one_hot_vector[index] = 1
     one_hot_vector = torch.Tensor(one_hot_vector)
     one_hot_vector.requires_grad = False
     return one_hot_vector
 
-def asynchronize(Worker, Server):  # MC sends gradient to Server
+
+def asynchronize(Worker, Server, time_step=None):  # MC sends gradient to Server
     """
     :param Worker: current MC's optimizer (self)
     :param Server: cloud
@@ -149,7 +150,7 @@ def asynchronize(Worker, Server):  # MC sends gradient to Server
     """
     print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
     if len(Worker.buffer) >= 2:
-        Worker.accumulate_gradient()
+        Worker.accumulate_gradient(timestep=time_step)
         networks = (Worker.actor_net, Worker.critic_net)
         update_gradient(Server, networks)
 
@@ -164,11 +165,12 @@ def asynchronize(Worker, Server):  # MC sends gradient to Server
         print(f"Worker id_{Worker.id} has nothing to asynchronize")
 
 
-def all_asynchronize(MCs, Server):
+def all_asynchronize(MCs, Server, moment=None):
     """
+    :param moment: current time step
     :param MCs: list of MC
     :param Server: cloud
     """
     print("All asynchronize!")
     for MC in MCs:
-        asynchronize(Worker=MC.optimizer,Server=Server)
+        asynchronize(Worker=MC.optimizer,Server=Server, time_step=moment)

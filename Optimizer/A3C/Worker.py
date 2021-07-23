@@ -56,8 +56,7 @@ class Worker(Server):  # Optimizer
         return self.critic_net(state_vector)
 
     def policy_loss_fn(self, policy, action, temporal_diff):
-        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
-                                                                index=action)))
+        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,index=action)))
 
     def entropy_loss_fn(self, policy):
         return self.beta_entropy * torch.sum(policy * torch.log(policy))
@@ -65,7 +64,7 @@ class Worker(Server):  # Optimizer
     def value_loss_fn(self, value, reward):
         return (1/2) * torch.pow(reward - value, 2)
 
-    def accumulate_gradient(self, debug=True):
+    def accumulate_gradient(self, timestep=None, debug=True):
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
             else self.critic_net(self.buffer[-1]["state"])
 
@@ -90,8 +89,8 @@ class Worker(Server):  # Optimizer
             policy_total_loss.backward(retain_graph=True)
 
             if debug:
-                with open("log/weight_record/loss.txt", "a+") as dumpfile:
-                    dumpfile.write(f"Worker_{self.id}\t P_loss = {policy_loss.detach().numpy()}\t E_loss = {entropy_loss.detach().numpy()}\t V_loss = {value_loss.detach().numpy()[0]}\n")
+                with open("log/weight_record/loss.csv", "a+") as dumpfile:
+                    dumpfile.write(f"{timestep}\t{self.id}\t{tmp_diff.detach().numpy()[0]}\t{policy_loss.detach().numpy()}\t{entropy_loss.detach().numpy()}\t{value_loss.detach().numpy()[0]}\n")
 
     def reset_grad(self):
         self.actor_net.zero_grad()
@@ -134,21 +133,21 @@ class Worker(Server):  # Optimizer
         return action, charging_time_func(mc=mc, network=network, charging_pos_id=action, time_stem=time_stem)
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # action_space = torch.Tensor([1, 2, 3, 4])
     # print(action_space[1])
     # a = torch.Tensor(action_space)
     # print(a.detach().numpy())
 
-    b = torch.Tensor([3])
-    b.requires_grad = True
-    a = torch.Tensor([4])
-    a.requires_grad = True
-    c = 3*b + a
-    c.backward(retain_graph=True)
-    c.backward(retain_graph=True)
-    print(b.grad)
-    print(a.grad)
+    # b = torch.Tensor([3])
+    # b.requires_grad = True
+    # a = torch.Tensor([4])
+    # a.requires_grad = True
+    # c = 3*b + a
+    # c.backward(retain_graph=True)
+    # c.backward(retain_graph=True)
+    # print(b.grad)
+    # print(a.grad)
     # print(b.detach().numpy()[0])
     # alpha_H = 0.8
     # a = torch.Tensor([0.1, 0.2, 0.3, 0.4])
@@ -157,8 +156,6 @@ if __name__ == "__main__":
     # d = (1 - alpha_H) * a + alpha_H * c
     # print(d)
     # print(np.random.choice(action_space, p=d.detach().numpy()))
-
-
 
 
 

@@ -16,6 +16,8 @@ from scipy.stats import sem, t, tmean
 import os
 os.system("rm log/weight_record/*")
 os.system("rm log/Worker*")
+with open("log/weight_record/loss.csv", "w") as dumpfile:
+    dumpfile.write("Time\tWorker\tTD\tPLoss\tELoss\tVLoss\n")
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
 df = pd.read_csv("data/" + experiment_type + ".csv")
