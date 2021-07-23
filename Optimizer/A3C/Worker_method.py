@@ -68,7 +68,7 @@ def extract_state_tensor(worker, network):
         min_E = float('inf')
         max_e = float('-inf')
         for each_node in network.node:
-            if each_node.is_activate and torch.dist(torch.tensor(each_node.location, dtype=torch.float),
+            if each_node.energy > 0 and torch.dist(torch.tensor(each_node.location, dtype=torch.float),
                                                     torch.tensor(pos, dtype=torch.float)) <= r:
                 if each_node.energy < min_E:
                     min_E = each_node.energy
@@ -83,7 +83,7 @@ def extract_state_tensor(worker, network):
     # state = torch.cat([MC_info_tensor, charge_pos_tensor, nodes_info_tensor])
     state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info])
     # return Tensor form of the state
-    return state  # 3 x nb_mc + 4 x nb_node
+    return state  # 3 x nb_mc + 4 x nb_charing_pos
 
 
 # TODO: get state from network (new - Nguyen Thanh Long)
