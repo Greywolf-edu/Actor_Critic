@@ -50,18 +50,38 @@ def extract_state_tensor(worker, network):
     charge_pos_tensor = torch.flatten(charge_pos_tensor)  # flatten (3 x nb_mc - 3)
     charge_pos_tensor.requires_grad = False
 
-    nodes_info = []
-    for each_node in network.node:
-        x, y = each_node.location
-        E = each_node.energy  # current energy
-        e = each_node.avg_energy  # consumption rate
-        nodes_info.append([x, y, E, e])
+    # nodes_info = []
+    # for each_node in network.node:
+    #     x, y = each_node.location
+    #     E = each_node.energy  # current energy
+    #     e = each_node.avg_energy  # consumption rate
+    #     nodes_info.append([x, y, E, e])
+    #
+    # nodes_info_tensor = torch.Tensor(nodes_info)
+    # nodes_info_tensor = torch.flatten(nodes_info_tensor)  # 4 x nb_node
+    # nodes_info_tensor.requires_grad = False
 
-    nodes_info_tensor = torch.Tensor(nodes_info)
-    nodes_info_tensor = torch.flatten(nodes_info_tensor)  # 4 x nb_node
-    nodes_info_tensor.requires_grad = False
+    partition_info = []
+    r = 10
+    for pos in charge_pos:
+        x_charge_pos, y_charge_pos = pos
+        min_E = float('inf')
+        max_e = float('-inf')
+        for each_node in network.node:
+            if each_node.is_activate and torch.dist(torch.tensor(each_node.location, dtype=torch.float),
+                                                    torch.tensor(pos, dtype=torch.float)) <= r:
+                if each_node.energy < min_E:
+                    min_E = each_node.energy
+                if each_node.avg_energy > max_e:
+                    max_e = each_node.avg_energy
+        partition_info.append([x_charge_pos, y_charge_pos, min_E, max_e])
 
-    state = torch.cat([MC_info_tensor, charge_pos_tensor, nodes_info_tensor])
+    partition_info_tensor = torch.Tensor(partition_info)
+    partition_info_tensor = torch.flatten(partition_info_tensor)  # 3 x nb_action
+    partition_info_tensor.requires_grad = False
+
+    # state = torch.cat([MC_info_tensor, charge_pos_tensor, nodes_info_tensor])
+    state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info])
     # return Tensor form of the state
     return state  # 3 x nb_mc + 4 x nb_node
 
@@ -178,4 +198,4 @@ def all_asynchronize(MCs, Server, moment=None):
     """
     print("All asynchronize!")
     for MC in MCs:
-        asynchronize(Worker=MC.optimizer,Server=Server, time_step=moment)
+        asynchronize(Worker=MC.optimizer, Server=Server, time_step=moment)
