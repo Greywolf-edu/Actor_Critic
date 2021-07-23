@@ -70,6 +70,7 @@ def extract_state_tensor(worker, network):
 def extract_state_tensor_v2(worker, network):
     return None
 
+
 def charging_time_func(mc=None, network=None, charging_pos_id=None, time_stem=0, alpha=0.1):
     """
     :param mc: mobile charger

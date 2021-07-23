@@ -120,21 +120,22 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        # heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
-        # assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
+        heuristic_policy = get_heuristic_policy(network=network, mc=mc, Worker=self)
+        assert np.sum(heuristic_policy) == 1, "Heuristic policy is false (sum not equals to 1)"
 
-        # behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+        behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tesor2value(policy))
 
         # record all transitioning and reward
         self.buffer.append(
             self.create_experience(
                 state=state_tensor, action=action,
-                policy_prob=policy[action], behavior_prob= None, # behavior_policy[action],
+                policy_prob=policy[action], behavior_prob= behavior_policy[action],
                 reward=R
             )
         )
-
+        # apply decay on alpha_H
+        self.alpha_H *= self.theta_H
         print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
         if action == self.nb_action - 1:
             return action, (mc.capacity - mc.energy) / mc.e_self_charge
