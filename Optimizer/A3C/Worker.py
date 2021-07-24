@@ -124,8 +124,7 @@ class Worker(Server):  # Optimizer
             exit(100)
 
         heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp)
-        # print(float(torch.sum(heuristic_policy)))
-        # print(float(torch.sum(heuristic_policy)) == 1)
+        assert not torch.isnan(heuristic_policy).any(), "Heuristic policy contains Nan value"
         assert float(torch.sum(heuristic_policy)) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy

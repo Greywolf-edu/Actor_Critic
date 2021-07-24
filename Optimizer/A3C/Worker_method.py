@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from Optimizer.A3C.Server_method import update_gradient
-from heuristic import H_charging_time_func, H_get_heuristic_policy
+from Optimizer.A3C.heuristic import H_charging_time_func, H_get_heuristic_policy
 
 
 def get_nearest_charging_pos(current_location, charging_pos_list):
