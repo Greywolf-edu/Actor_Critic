@@ -82,13 +82,15 @@ def extract_state_tensor_v2(worker, net):
 
 
 def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.1):
-    return H_charging_time_func(mc, net, action_id, time_stamp, theta)
+    return H_charging_time_func(mc=mc, net=net, action_id=action_id, time_stamp=time_stamp, theta=theta)
 
 
 # TODO: implement heuristic policy (Nguyen Thanh Long)
 def get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
-    return H_get_heuristic_policy(net, mc, worker, time_stamp)
-
+    # return H_get_heuristic_policy(net=net, mc=mc, worker=worker, time_stamp=time_stamp)
+    H_policy = torch.ones_like(torch.Tensor(worker.action_space)) / worker.nb_action
+    H_policy.requires_grad = False
+    return H_policy
 
 def one_hot(index, size):
     one_hot_vector = np.zeros(size)
