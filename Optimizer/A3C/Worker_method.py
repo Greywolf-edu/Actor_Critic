@@ -1,3 +1,5 @@
+import math
+
 import torch
 from scipy.spatial import distance
 from torch.nn import Softmax
@@ -158,11 +160,13 @@ def get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor)
     self_charging_factor = self_charging_factor / torch.sum(self_charging_factor)
     H_policy = energy_factor + priority_factor + target_monitoring_factor - self_charging_factor
-    print(H_policy)
     softmax = Softmax(dim=0)
     H_policy = softmax(H_policy)
-    print((float(torch.sum(H_policy))), H_policy.size())
+    H_policy_list = H_policy.tolist()
+    H_policy_list[0] = 1 - sum(H_policy_list[1:])
+    H_policy = torch.Tensor(H_policy_list)
     H_policy.requires_grad = False
+    print(H_policy)
     return H_policy  # torch tensor size = #nb_action
 
 
