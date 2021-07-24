@@ -77,8 +77,6 @@ class Worker(Server):  # Optimizer
         for i in range(t):              # mu = pi(A0|S0)/b(A0|S0) * pi(A1|S1)/b(A1|S1)
             mu *= M[i]
 
-        # print(mu)
-
         for i in range(t):              # 0, 1
             j = t - 1 - i               # 1, 0
             R = self.buffer[j]["reward"] + self.gamma * R
@@ -127,7 +125,6 @@ class Worker(Server):  # Optimizer
 
         heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp)
         assert not torch.isnan(heuristic_policy).any(), "Heuristic policy contains Nan value"
-        # assert float(torch.sum(heuristic_policy)) == 1, "Heuristic policy is false (sum not equals to 1)"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
