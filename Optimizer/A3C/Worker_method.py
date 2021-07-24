@@ -159,9 +159,12 @@ def get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     priority_factor = priority_factor / torch.sum(priority_factor)
     target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor)
     self_charging_factor = self_charging_factor / torch.sum(self_charging_factor)
-    H_policy = energy_factor + priority_factor + target_monitoring_factor - self_charging_factor
+    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)*10
     softmax = Softmax(dim=0)
     H_policy = softmax(H_policy)
+    # E = 10**H_policy
+    # H_policy = E/torch.sum(E)
+
     H_policy_list = H_policy.tolist()
     H_policy_list[0] = 1 - sum(H_policy_list[1:])
     H_policy = torch.Tensor(H_policy_list)
