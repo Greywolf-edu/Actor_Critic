@@ -77,7 +77,7 @@ class Worker(Server):  # Optimizer
         for i in range(t):              # mu = pi(A0|S0)/b(A0|S0) * pi(A1|S1)/b(A1|S1)
             mu *= M[i]
 
-        print(mu)
+        # print(mu)
 
         for i in range(t):              # 0, 1
             j = t - 1 - i               # 1, 0

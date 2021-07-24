@@ -1,3 +1,5 @@
+import random
+
 from Simulator.Sensor_Node.node_method import find_receiver
 from torch.nn import Softmax
 from scipy.spatial import distance
@@ -75,18 +77,28 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
     energy_factor = energy_factor / torch.sum(energy_factor)
+
     priority_factor = priority_factor / torch.sum(priority_factor)
+
     target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor)
-    self_charging_factor = self_charging_factor / torch.sum(self_charging_factor)
+
+    self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
+        if torch.sum(self_charging_factor) != 0 else 0
+
     H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)*10
-    softmax = Softmax(dim=0)
-    H_policy = softmax(H_policy)
+    # softmax = Softmax(dim=0)
+    # H_policy = softmax(H_policy)
     # E = 10**H_policy
     # H_policy = E/torch.sum(E)
 
-    H_policy_list = H_policy.tolist()
-    H_policy_list[0] = 1 - sum(H_policy_list[1:])
-    H_policy = torch.Tensor(H_policy_list)
+    # H_policy_list = H_policy.tolist()
+    # H_policy_list[0] = 1 - sum(H_policy_list[1:])
+    # H_policy = torch.Tensor(H_policy_list)
+    H_policy = torch.Tensor(H_policy)
+    H_policy = (H_policy - torch.mean(H_policy))/torch.std(H_policy)
+    G = torch.exp(H_policy)
+    H_policy = G / torch.sum(G)
+
     H_policy.requires_grad = False
     # print(H_policy)
     return H_policy  # torch tensor size = #nb_action
@@ -172,3 +184,15 @@ def get_all_path(net, receive_func=find_receiver):
     for sensor_id, target_id in enumerate(net.target):
         list_path.append(get_path(net, sensor_id, receive_func))
     return list_path
+
+
+if __name__ == "__main__":
+    a = torch.rand(15) * random.gauss(0.011, 0.005)
+    d = 2 * (a - torch.mean(a))/torch.std(a)
+    c = torch.exp(d)
+    b = c/torch.sum(c)
+    print(a)
+    print("new way", b)
+    # c = torch.exp(a)
+    # b = c/torch.sum(c)
+    # print("old way", b)
