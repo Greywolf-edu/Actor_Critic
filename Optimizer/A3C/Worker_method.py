@@ -20,7 +20,7 @@ def reward_function(net):
             e_list.append(each_node.energy)
 
     print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    return min(e_list)
+    return -1/min(e_list)
 
 
 def TERMINAL_STATE(state_tensor):
@@ -125,8 +125,10 @@ def asynchronize(Worker, Server, time_step=None):  # MC sends gradient to Server
         Worker.buffer.clear()
         # restore current state for next use
         Worker.buffer.append(lastBuffer)
+        return True
     else:
         print(f"Worker id_{Worker.id} has nothing to asynchronize")
+        return False
 
 
 def all_asynchronize(MCs, Server, moment=None):
@@ -136,5 +138,13 @@ def all_asynchronize(MCs, Server, moment=None):
     :param Server: cloud
     """
     print("All asynchronize!")
+    any_news = []
     for MC in MCs:
-        asynchronize(Worker=MC.optimizer, Server=Server, time_step=moment)
+        any_news.append(asynchronize(Worker=MC.optimizer, Server=Server, time_step=moment))
+
+    return (True in any_news)
+
+
+if __name__ == "__main__":
+    T = [True, False, True]
+    print(True in T)

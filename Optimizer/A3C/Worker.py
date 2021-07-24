@@ -97,11 +97,11 @@ class Worker(Server):  # Optimizer
             policy_total_loss = policy_loss + entropy_loss
             policy_total_loss.backward(retain_graph=True)
 
-            mu /= M[j]
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{tensor2value(policy_loss)}\t"
+                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{mu}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
+            mu /= M[j]
 
     def reset_grad(self):
         self.actor_net.zero_grad()

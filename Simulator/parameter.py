@@ -31,4 +31,4 @@ SIM_log_frequency = 100
 
 
 # Node
-NODE_e_thresh_ratio = 0.7
+NODE_e_thresh_ratio = 0.4

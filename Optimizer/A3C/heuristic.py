@@ -1,7 +1,6 @@
 import random
 
 from Simulator.Sensor_Node.node_method import find_receiver
-from torch.nn import Softmax
 from scipy.spatial import distance
 import torch
 import numpy as np
@@ -62,7 +61,7 @@ def H_charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=
         arg_min = np.argmin(dead_list)
         return t[arg_min]
     else:
-        return 0
+        return 10
 
 
 def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
