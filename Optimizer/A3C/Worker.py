@@ -89,9 +89,10 @@ class Worker(Server):  # Optimizer
             value_loss.backward(retain_graph=True)
 
             tmp_diff = R - value
+            truncated_mu = min(mu, 5)
             policy_loss = self.policy_loss_fn(policy=policy,
                                               temporal_diff=tensor2value(tmp_diff),
-                                              action=self.buffer[j]["action"]) * mu
+                                              action=self.buffer[j]["action"]) * truncated_mu
 
             entropy_loss = self.entropy_loss_fn(policy=policy)
             policy_total_loss = policy_loss + entropy_loss
@@ -99,7 +100,7 @@ class Worker(Server):  # Optimizer
 
             if debug:
                 with open("log/weight_record/loss.csv", "a+") as dumpfile:
-                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{mu}\t{tensor2value(policy_loss)}\t"
+                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{truncated_mu}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
             mu /= M[j]
 
