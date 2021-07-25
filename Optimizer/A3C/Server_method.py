@@ -31,7 +31,6 @@ def update_gradient(server, MC_networks, debug=True):
                 debug_weights_update(serverParam.data, MCParam.grad)
             serverParam.data -= server.actor_lr * MCParam.grad
 
-
     # Update server's critic network
     for serverParam, MCParam in \
             zip(server.critic_net.parameters(), MC_critic_net.parameters()):
