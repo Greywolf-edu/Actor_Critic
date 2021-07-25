@@ -43,6 +43,7 @@ class Worker(Server):  # Optimizer
             dumpfile_writer = csv.writer(dumpfile)
             if self.step == 0:
                 dumpfile_writer.writerow(experience.keys())
+
             dumpfile_writer.writerow([
                 self.step, reward, tensor2value(state), action, policy_prob, behavior_prob
             ])
@@ -89,7 +90,7 @@ class Worker(Server):  # Optimizer
             value_loss.backward(retain_graph=True)
 
             tmp_diff = R - value
-            truncated_mu = min(mu, 5)
+            truncated_mu = min(mu, para.A3C_clipping_mu)
             policy_loss = self.policy_loss_fn(policy=policy,
                                               temporal_diff=tensor2value(tmp_diff),
                                               action=self.buffer[j]["action"]) * truncated_mu
@@ -111,7 +112,7 @@ class Worker(Server):  # Optimizer
     def get_action(self, network=None, mc=None, time_stamp=None):
         R = 0
         if self.step != 0:
-            R = reward_function(network)
+            R = reward_function(Worker=self, mc=mc, network=network, time_stamp=time_stamp)
 
         state_tensor = extract_state_tensor(self, network)
         policy = self.get_policy(state_tensor)

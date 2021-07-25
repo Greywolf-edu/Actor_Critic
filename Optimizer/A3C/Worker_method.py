@@ -13,14 +13,17 @@ def get_nearest_charging_pos(current_location, charging_pos_list):
 
 
 # TODO: re-define the reward
-def reward_function(net):
+def reward_function(Worker, mc, network, time_stamp):
     e_list = []
-    for each_node in net.node:
+    for each_node in network.node:
         if each_node.energy > 0:
             e_list.append(each_node.energy)
 
     print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    return -1 / min(e_list)
+    if Worker.step < 100:
+        return -1 / min(e_list)
+    else:
+        return min(e_list)
 
 
 def TERMINAL_STATE(state_tensor):

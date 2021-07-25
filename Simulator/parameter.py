@@ -15,14 +15,15 @@ E_mc_thresh = 10
 A3C_k_step = 3
 A3C_synchronize_T = 100
 A3C_gamma = 0.95
-A3C_beta_entropy = 0.1
+A3C_beta_entropy = 0.005
 A3C_serverActor_lr = 1e-3
 A3C_serverCritic_lr = 1e-3
 
 #A3C week2
 A3C_alpha_heuristic = 1
-A3C_decay_heuristic = 0.98
-A3C_clipping_gradient = 0.5
+A3C_decay_heuristic = 0.998
+A3C_clipping_mu = 5
+A3C_deterministic_factor = 2
 
 # Simulation
 SIM_duration = 10000

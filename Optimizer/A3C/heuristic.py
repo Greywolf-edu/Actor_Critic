@@ -87,7 +87,7 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)
 
     H_policy = torch.Tensor(H_policy)
-    H_policy = 2 * (H_policy - torch.mean(H_policy)) / torch.std(H_policy)
+    H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy)) / torch.std(H_policy)
     G = torch.exp(H_policy)
     H_policy = G / torch.sum(G)
 
