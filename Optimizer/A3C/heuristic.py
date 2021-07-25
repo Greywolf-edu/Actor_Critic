@@ -61,7 +61,7 @@ def H_charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=
         arg_min = np.argmin(dead_list)
         return t[arg_min]
     else:
-        return 10
+        return 0
 
 
 def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
