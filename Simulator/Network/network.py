@@ -74,7 +74,7 @@ class Network:
         state = self.communicate()
         self.request_id = []
         for index, node in enumerate(self.node):
-            if node.energy < node.energy_thresh:
+            if node.energy_thresh > node.energy > 0:
                 node.request(network=self, t=t)
                 self.request_id.append(index)
             else:

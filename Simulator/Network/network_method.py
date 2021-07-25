@@ -4,6 +4,7 @@ from sklearn.cluster import KMeans
 
 import Simulator.parameter as para
 from Simulator.Network.package import Package
+from Simulator.Network.network_visualizer import net_visualize
 
 
 def uniform_com_func(net):
@@ -41,11 +42,11 @@ def Kmeans_network_clustering(network=None):
     for node in network.node:
         node.set_check_point(200)
         X.append(node.location)
-        Y.append(node.avg_energy ** 0.5)
+        Y.append(node.avg_energy ** 2)
     X = np.array(X)
     Y = np.array(Y)
     print(Y)
-    d = np.linalg.norm(Y)
+    d = np.sum(Y)
     Y = Y / d
     kmeans = KMeans(n_clusters=network.nb_charging_pos, random_state=0).fit(X, sample_weight=Y)
     charging_pos = []
@@ -58,6 +59,6 @@ def Kmeans_network_clustering(network=None):
     for i in range(network.nb_charging_pos):
         network.index_node_in_cluster.append([index for index, label in enumerate(kmeans.labels_) if label == i])
 
-    network.index_node_in_cluster.append([])  #depot
-
+    network.index_node_in_cluster.append([])  # depot
+    net_visualize(net=network, nodes=network.node, charging_pos=charging_pos)
     return charging_pos

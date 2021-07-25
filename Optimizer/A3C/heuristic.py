@@ -75,19 +75,19 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         priority_factor[action_id] = temp[1]
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
-    energy_factor = energy_factor / torch.sum(energy_factor)
+    energy_factor = energy_factor / (torch.sum(energy_factor) + 10 ** -7)
 
-    priority_factor = priority_factor / torch.sum(priority_factor)
+    priority_factor = priority_factor / (torch.sum(priority_factor) + 10 ** -7)
 
-    target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor)
+    target_monitoring_factor = target_monitoring_factor / (torch.sum(target_monitoring_factor) + 10 ** -7)
 
     self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
         if torch.sum(self_charging_factor) != 0 else 0
 
-    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)*10
+    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor) * 10
 
     H_policy = torch.Tensor(H_policy)
-    H_policy = 2 * (H_policy - torch.mean(H_policy))/torch.std(H_policy)
+    H_policy = 2 * (H_policy - torch.mean(H_policy)) / torch.std(H_policy)
     G = torch.exp(H_policy)
     H_policy = G / torch.sum(G)
 
@@ -100,7 +100,7 @@ def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stam
         return 0, 0, 0, 0
     theta = optimizer.charging_time_theta
     charging_time = H_charging_time_func(mc, net, action_id=action_id, time_stamp=time_stamp,
-                                       theta=theta)
+                                         theta=theta)
     w, nb_target_alive = get_weight(net=net, mc=mc, action_id=action_id, charging_time=charging_time,
                                     receive_func=receive_func)
     p = get_charge_per_sec(net=net, action_id=action_id)
@@ -179,9 +179,9 @@ def get_all_path(net, receive_func=find_receiver):
 
 if __name__ == "__main__":
     a = torch.rand(15) * random.gauss(0.011, 0.005)
-    d = 2 * (a - torch.mean(a))/torch.std(a)
+    d = 2 * (a - torch.mean(a)) / torch.std(a)
     c = torch.exp(d)
-    b = c/torch.sum(c)
+    b = c / torch.sum(c)
     print(a)
     print("new way", b)
     # c = torch.exp(a)

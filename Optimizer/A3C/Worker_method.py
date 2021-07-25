@@ -142,7 +142,7 @@ def all_asynchronize(MCs, Server, moment=None):
     for MC in MCs:
         any_news.append(asynchronize(Worker=MC.optimizer, Server=Server, time_step=moment))
 
-    return (True in any_news)
+    return True in any_news
 
 
 if __name__ == "__main__":
