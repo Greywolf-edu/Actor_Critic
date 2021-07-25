@@ -20,7 +20,7 @@ def reward_function(net):
             e_list.append(each_node.energy)
 
     print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    return -1/min(e_list)
+    return -1 / min(e_list)
 
 
 def TERMINAL_STATE(state_tensor):
@@ -29,10 +29,24 @@ def TERMINAL_STATE(state_tensor):
 
 
 def extract_state_tensor(worker, net):
+    def normalization(input, max, min):
+        if np.isscalar(input):
+            return [-1 + (input - min) * (1 - -1) / (max - min)]
+        else:
+            input = np.array(input)
+            normalized_np = -1 + (input - min) * (1 - -1) / (max - min)
+            return list(normalized_np)
+
+    pos_max = 999
+    pos_min = 0
+
     # Implement here
     MC = net.mc_list[worker.id]
     MC_location = [MC.current[0], MC.current[1]]  # get x, y coordination
-    MC_info = MC_location + [MC.energy]
+    MC_location = normalization(MC_location, pos_max, pos_min)  # location normalization
+    MC_energy = normalization(MC.energy, MC.capacity, 0)  # energy normalization
+    MC_info = MC_location + MC_energy  # concat list
+
     MC_info_tensor = torch.Tensor(MC_info)
     MC_info_tensor = torch.flatten(MC_info_tensor)  # flatten (3) [x, y, E]
     MC_info_tensor.requires_grad = False
@@ -42,15 +56,17 @@ def extract_state_tensor(worker, net):
     for mc in net.mc_list:
         if mc.id != MC.id:
             x_mc, y_mc = get_nearest_charging_pos(mc.current, charge_pos)
-            e_mc = mc.energy
-            charge_pos_info.append([x_mc, y_mc, e_mc])
+            MC_location = normalization([x_mc, y_mc], pos_max, pos_min)  # location normalization
+            e_mc = normalization(mc.energy, mc.capacity, 0)  # energy normalization
+            charge_pos_info.append(MC_location + e_mc)  # concat list
+
     charge_pos_tensor = torch.Tensor(charge_pos_info)
     charge_pos_tensor = torch.flatten(charge_pos_tensor)  # flatten (3 x nb_mc - 3)
     charge_pos_tensor.requires_grad = False
 
     partition_info = []
     for i, pos in enumerate(charge_pos):
-        x_charge_pos, y_charge_pos = pos
+        charge_pos = normalization(pos, pos_max, pos_min)
         min_E = float('inf')
         max_e = float('-inf')
 
@@ -64,8 +80,9 @@ def extract_state_tensor(worker, net):
         if min_E == float('inf'):
             min_E = 0
             max_e = 0
-
-        partition_info.append([x_charge_pos, y_charge_pos, min_E, max_e])
+        min_E = normalization(min_E, 10, 0)
+        max_e = normalization(max_e, 10, 0)
+        partition_info.append(charge_pos + min_E + max_e)  # concat list
 
     partition_info_tensor = torch.Tensor(partition_info)
     partition_info_tensor = torch.flatten(partition_info_tensor)  # 4 x nb_action
