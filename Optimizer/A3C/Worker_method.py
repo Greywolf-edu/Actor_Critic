@@ -93,7 +93,7 @@ def extract_state_tensor(worker, net):
 
     state = torch.cat([MC_info_tensor, charge_pos_tensor, partition_info_tensor])
     # return Tensor form of the state
-    return state  # 3 x nb_mc + 4 x nb_charging_pos
+    return state  # 3 x nb_mc, 4 x nb_charging_pos
 
 
 # TODO: get state from network (new - Nguyen Thanh Long)

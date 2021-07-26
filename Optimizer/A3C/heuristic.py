@@ -75,11 +75,11 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         priority_factor[action_id] = temp[1]
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
-    energy_factor = energy_factor / (torch.sum(energy_factor) + 10 ** -4)
+    energy_factor = energy_factor / (torch.sum(energy_factor) + 1e-6)
 
-    priority_factor = priority_factor / (torch.sum(priority_factor) + 10 ** -4)
+    priority_factor = priority_factor / (torch.sum(priority_factor) + 1e-6)
 
-    target_monitoring_factor = target_monitoring_factor / (torch.sum(target_monitoring_factor) + 10 ** -4)
+    target_monitoring_factor = target_monitoring_factor / (torch.sum(target_monitoring_factor) + 1e-6)
 
     self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
         if torch.sum(self_charging_factor) != 0 else 0

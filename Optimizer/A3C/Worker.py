@@ -38,16 +38,6 @@ class Worker(Server):  # Optimizer
             "policy_prob": policy_prob,     # record policy prob(action t)
             "behavior_prob": behavior_prob  # record behavior prob(action t)
         }
-
-        with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:
-            dumpfile_writer = csv.writer(dumpfile)
-            if self.step == 0:
-                dumpfile_writer.writerow(experience.keys())
-
-            dumpfile_writer.writerow([
-                self.step, reward, tensor2value(state), action, policy_prob, behavior_prob
-            ])
-
         self.step += 1
         return experience
 
@@ -131,6 +121,30 @@ class Worker(Server):  # Optimizer
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
 
+        # apply decay on alpha_H
+        self.alpha_H *= self.theta_H
+
+        # get charging time
+        charging_time = 0
+        if action == self.nb_action - 1:
+            charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
+        else:
+            charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
+                                          theta=self.charging_time_theta)
+
+        with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:
+            dumpfile_writer = csv.writer(dumpfile)
+            if self.step != 0:
+                dumpfile_writer.writerow([
+                    self.step, R, tensor2value(state_tensor), action, tensor2value(policy[action]),
+                    tensor2value(heuristic_policy[action]), tensor2value(behavior_policy[action]),
+                    charging_time
+                ])
+            else:
+                dumpfile_writer.writerow(["step", "reward", "state", "action",
+                                          "policy_prob", "heuristic_prob", "behavior_prob",
+                                          "charging_time"])
+
         # record all transitioning and reward
         self.buffer.append(
             self.create_experience(
@@ -139,13 +153,8 @@ class Worker(Server):  # Optimizer
                 reward=R
             )
         )
-        # apply decay on alpha_H
-        self.alpha_H *= self.theta_H
-        print(f"Here at location ({mc.current[0]}, {mc.current[1]}) worker id_{self.id} made decision")
-        if action == self.nb_action - 1:
-            return action, (mc.capacity - mc.energy) / mc.e_self_charge
-        return action, charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
-                                          theta=self.charging_time_theta)
+
+        return action, charging_time
 
 
 if __name__ == "__main__":
