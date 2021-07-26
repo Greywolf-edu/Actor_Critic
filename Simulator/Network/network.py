@@ -67,8 +67,8 @@ class Network:
                 synchronize(self.Server, self.mc_list)
 
         if t % self.T == 0 and t > para.SIM_partition_time:  # after T (s)
-            print(f"Synchronize at time {t}")
             if all_asynchronize(MCs=self.mc_list, Server=self.Server, moment=t):
+                print(f"Synchronize at time {t}")
                 synchronize(self.Server, self.mc_list)
         # ==========================================================
         state = self.communicate()

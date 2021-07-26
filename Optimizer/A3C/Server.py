@@ -6,7 +6,6 @@ from Optimizer.A3C.Server_method import update_gradient, zero_net_weights
 class Server(nn.Module):
     def __init__(self, nb_state_feature, nb_action, name):
         super(Server, self).__init__()
-
         self.actor_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
             nn.Sigmoid(),
@@ -43,6 +42,9 @@ class Server(nn.Module):
         self.actor_lr = para.A3C_serverActor_lr
         self.critic_lr = para.A3C_serverCritic_lr
 
+        self.net = [self.actor_net, self.critic_net]
+        self.lr = [self.actor_lr, self.critic_lr]
+
         self.nb_state_feature = nb_state_feature
         self.nb_action = nb_action
 
@@ -53,8 +55,12 @@ class Server(nn.Module):
 
 
 if __name__ == "__main__":
-    a = (1, 2, 3, 4, 5)
-    b = [4, 3, 5, 2, 6]
-    c = zip(a, b)
-    for x, y in c:
-        print(x, y)
+    # a = (1, 2, 3, 4, 5)
+    # b = [4, 3, 5, 2, 6]
+    # c = zip(a, b)
+    # for x, y in c:
+    #     print(x, y)
+
+    d = [1,2,3,4]
+    x,y,z,t = d
+    print(x,y,z,t)

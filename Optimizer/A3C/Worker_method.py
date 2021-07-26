@@ -108,9 +108,6 @@ def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.
 # TODO: implement heuristic policy (Nguyen Thanh Long)
 def get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     return H_get_heuristic_policy(net=net, mc=mc, worker=worker, time_stamp=time_stamp)
-    # H_policy = torch.ones_like(torch.Tensor(worker.action_space)) / worker.nb_action
-    # H_policy.requires_grad = False
-    # return H_policy
 
 
 def one_hot(index, size):
@@ -135,7 +132,8 @@ def asynchronize(Worker, Server, time_step=None):  # MC sends gradient to Server
     print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
     if len(Worker.buffer) >= 2:
         Worker.accumulate_gradient(time_step=time_step)
-        networks = (Worker.actor_net, Worker.critic_net)
+        # networks = (Worker.actor_net, Worker.critic_net)
+        networks = Worker.net
         update_gradient(Server, networks)
 
         # clean gradient

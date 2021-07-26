@@ -29,7 +29,7 @@ A3C_deterministic_factor = 2
 SIM_duration = 10000
 SIM_partition_time = 200
 SIM_log_frequency = 100
-
+SIM_plot_network = False
 
 # Node
 NODE_e_thresh_ratio = 0.4
