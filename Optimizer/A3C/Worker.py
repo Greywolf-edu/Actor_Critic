@@ -41,12 +41,6 @@ class Worker(Server):  # Optimizer
         self.step += 1
         return experience
 
-    def get_policy(self, state_vector):
-        return self.actor_net(state_vector)
-
-    def get_value(self, state_vector):
-        return self.critic_net(state_vector)
-
     def policy_loss_fn(self, policy, action, temporal_diff):
         return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
                                                                                        index=action)))
@@ -60,7 +54,7 @@ class Worker(Server):  # Optimizer
     def accumulate_gradient(self, time_step=None, debug=True):
         # i.e. (R,S,A) = [(R0,S0,A0),(R1,S1,A1),(R2,S2,A2)]
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
-            else self.critic_net(self.buffer[-1]["state"])      # R[2]
+            else self.get_value(self.buffer[-1]["state"])      # R[2]
 
         t = len(self.buffer) - 1        # t = 2
         M = [self.buffer[i]["policy_prob"] / self.buffer[i]["behavior_prob"] for i in range(t)]
@@ -73,8 +67,8 @@ class Worker(Server):  # Optimizer
             R = self.buffer[j]["reward"] + self.gamma * R
 
             state_vector = self.buffer[j]["state"]
-            value = self.critic_net(state_vector)
-            policy = self.actor_net(state_vector)
+            value = self.get_value(state_vector)
+            policy = self.get_policy(state_vector)
 
             value_loss = self.value_loss_fn(value=value, reward=R)
             value_loss.backward(retain_graph=True)
@@ -96,8 +90,8 @@ class Worker(Server):  # Optimizer
             mu /= M[j]
 
     def reset_grad(self):
-        self.actor_net.zero_grad()
-        self.critic_net.zero_grad()
+        for partial_net in self.net:
+            partial_net.zero_grad()
 
     def get_action(self, network=None, mc=None, time_stamp=None):
         R = 0
@@ -163,15 +157,16 @@ if __name__ == "__main__":
     # a = torch.Tensor(action_space)
     # print(a[1])
 
-    # b = torch.Tensor([3])
-    # b.requires_grad = True
-    # a = torch.Tensor([4])
-    # a.requires_grad = True
-    # c = 3*b + a
+    b = torch.Tensor([3])
+    b.requires_grad = True
+    a = torch.Tensor([4])
+    a.requires_grad = True
+    with torch.no_grad():
+        c = 3 * b + a
+    c.backward(retain_graph=True)
     # c.backward(retain_graph=True)
-    # c.backward(retain_graph=True)
-    # print(b.grad)
-    # print(a.grad)
+    print(b.grad)
+    print(a.grad)
     # print(b.detach().numpy()[0])
     # alpha_H = 0.8
     # a = torch.Tensor([0.1, 0.2, 0.3, 0.4])
@@ -181,9 +176,9 @@ if __name__ == "__main__":
     # print(d)
     # print(np.random.choice(action_space, p=d.detach().numpy()))
 
-    b = [1,2,3,4,5]
-    c = torch.ones_like(torch.Tensor(b))
-    print(c)
+    # b = [1,2,3,4,5]
+    # c = torch.ones_like(torch.Tensor(b))
+    # print(c)
 
 
 

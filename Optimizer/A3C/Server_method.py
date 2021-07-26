@@ -20,7 +20,7 @@ def synchronize(server, mc_list):
 def update_gradient(server, MC_networks, debug=True):
     """
     :param server: cloud
-    :param MC_networks: is ONE MC's networks, a tuple of (actor, critic)
+    :param MC_networks: is ONE MC's networks, or Worker.net
     """
     # MC_actor_net, MC_critic_net = MC_networks
     # Update server's actor network
@@ -39,9 +39,8 @@ def update_gradient(server, MC_networks, debug=True):
     #             debug_weights_update(serverParam.data, MCParam.grad)
     #         serverParam.data -= server.critic_lr * MCParam.grad
 
-    for MC_partial_net, learning_rate in zip(MC_networks, server.lr):
-        for serverParam, MCParam in \
-                zip(server.actor_net.parameters(), MC_partial_net.parameters()):
+    for MC_partial_net, SV_partial_net, learning_rate in zip(MC_networks, server.net, server.lr):
+        for serverParam, MCParam in zip(SV_partial_net.parameters(), MC_partial_net.parameters()):
             if not torch.isnan(MCParam.grad).any():
                 if debug:
                     debug_weights_update(serverParam.data, MCParam.grad)
@@ -54,7 +53,7 @@ def zero_net_weights(net):
 
 
 def debug_weights_update(param_data, grad):
-    with open("log/weight_record/actor_param.txt", "a+") as dumpfile:
+    with open("log/weight_record/param.txt", "a+") as dumpfile:
         dumpfile.write(str(torch.sum(param_data)) + "\t" + str(torch.sum(grad)) + "\n")
 
 
