@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import Simulator.parameter as para
 from Optimizer.A3C.Server_method import update_gradient, zero_net_weights
@@ -6,6 +7,7 @@ from Optimizer.A3C.Server_method import update_gradient, zero_net_weights
 class Server(nn.Module):
     def __init__(self, nb_state_feature, nb_action, name):
         super(Server, self).__init__()
+
         self.body_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
             nn.Sigmoid(),
@@ -45,9 +47,11 @@ class Server(nn.Module):
         )
         zero_net_weights(self.critic_net)
 
-        self.actor_lr = para.A3C_serverActor_lr
-        self.critic_lr = para.A3C_serverCritic_lr
-        self.body_lr = 1e-3
+        self.actor_lr = para.A3C_start_Actor_lr
+        self.critic_lr = para.A3C_start_Critic_lr
+        self.body_lr = para.A3C_start_Body_lr
+
+        self.decay_lr = para.A3C_decay_lr
 
         self.net = [self.body_net, self.actor_net, self.critic_net]
         self.lr = [self.body_lr, self.actor_lr, self.critic_lr]
@@ -75,7 +79,14 @@ if __name__ == "__main__":
     # c = zip(a, b)
     # for x, y in c:
     #     print(x, y)
-
-    d = [1,2,3,4]
-    x,y,z,t = d
-    print(x,y,z,t)
+    a = torch.Tensor([1,2,3,4,5])
+    b = torch.Tensor([5,8,1,2,3])
+    e = torch.Tensor([7,3,5,8,1])
+    c = torch.reshape(torch.cat([a,b,e]),[1, 1, 3, 5])
+    # c = torch.dot(a, b)
+    print(c)
+    conv1 = torch.nn.Conv1d(in_channels=1, out_channels=5, kernel_size=(3,2))
+    d = conv1(c)
+    print(d)
+    # c = torch.cat([a, b], 0)
+    # print(c)

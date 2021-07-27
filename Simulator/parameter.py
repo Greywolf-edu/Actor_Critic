@@ -24,6 +24,11 @@ A3C_alpha_heuristic = 1
 A3C_decay_heuristic = 0.998
 A3C_clipping_mu = 5
 A3C_deterministic_factor = 2
+A3C_serverBody_lr = 1e-3
+A3C_start_Body_lr = 0.5
+A3C_start_Actor_lr = 0.25
+A3C_start_Critic_lr = 0.25
+A3C_decay_lr = 0.9397455978
 
 # Simulation
 SIM_duration = 10000
