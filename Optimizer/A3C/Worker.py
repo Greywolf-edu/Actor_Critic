@@ -123,7 +123,7 @@ class Worker(Server):  # Optimizer
         if action == self.nb_action - 1:
             charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
         else:
-            charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
+            charging_time = charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
                                           theta=self.charging_time_theta)
 
         with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:

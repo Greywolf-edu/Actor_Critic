@@ -121,8 +121,7 @@ def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stam
 def get_weight(net, mc, action_id, charging_time, receive_func=find_receiver):
     p = get_charge_per_sec(net, action_id)
     all_path = get_all_path(net, receive_func)
-    time_move = distance.euclidean(mc.current,
-                                   net.charging_pos[action_id]) / mc.velocity
+    time_move = distance.euclidean(mc.current, net.charging_pos[action_id]) / mc.velocity
     list_dead = []
     w = [0 for _ in net.request_list]
     for request_id, request in enumerate(net.request_list):
