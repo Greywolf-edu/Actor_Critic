@@ -69,21 +69,30 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     priority_factor = torch.ones_like(torch.Tensor(worker.action_space))
     target_monitoring_factor = torch.ones_like(torch.Tensor(worker.action_space))
     self_charging_factor = torch.ones_like(torch.Tensor(worker.action_space))
+    distance_factor = torch.ones_like(torch.Tensor(worker.action_space))
     for action_id in worker.action_space:
         temp = heuristic_function(net=net, mc=mc, optimizer=worker, action_id=action_id, time_stamp=time_stamp)
         energy_factor[action_id] = temp[0]
         priority_factor[action_id] = temp[1]
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
-    energy_factor = energy_factor / (torch.sum(energy_factor) + 1e-6)
+        distance_factor[action_id] = temp[4]
+    energy_factor = energy_factor / torch.sum(energy_factor) \
+        if torch.sum(energy_factor) != 0 else 0
 
-    priority_factor = priority_factor / (torch.sum(priority_factor) + 1e-6)
+    priority_factor = priority_factor / torch.sum(priority_factor) \
+        if torch.sum(priority_factor) != 0 else 0
 
-    target_monitoring_factor = target_monitoring_factor / (torch.sum(target_monitoring_factor) + 1e-6)
+    target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor) \
+        if torch.sum(target_monitoring_factor) != 0 else 0
 
-    self_charging_factor = self_charging_factor / (torch.sum(self_charging_factor) + 1e-6)
+    self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
+        if torch.sum(self_charging_factor) != 0 else 0
 
-    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)
+    distance_factor = distance_factor / torch.sum(distance_factor) \
+        if torch.sum(distance_factor) != 0 else 0
+
+    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor - distance_factor)
 
     H_policy = torch.Tensor(H_policy)
     H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy))
@@ -96,6 +105,8 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         print(priority_factor)
         print(target_monitoring_factor)
         print(self_charging_factor)
+        print(distance_factor)
+        print(H_policy)
         print("Heuristic policy contains Nan value")
         exit(120)
 
@@ -104,10 +115,12 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
 
 def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stamp=0, receive_func=find_receiver):
     if action_id == optimizer.nb_action - 1:
-        return 0, 0, 0, 0
+        return 0, 0, 0, 0, 0
     theta = optimizer.charging_time_theta
     charging_time = H_charging_time_func(mc, net, action_id=action_id, time_stamp=time_stamp,
                                          theta=theta)
+    dist = distance.euclidean(mc.current, net.charging_pos[action_id])
+    moving_time = dist / mc.velocity
     w, nb_target_alive = get_weight(net=net, mc=mc, action_id=action_id, charging_time=charging_time,
                                     receive_func=receive_func)
     p = get_charge_per_sec(net=net, action_id=action_id)
@@ -115,14 +128,17 @@ def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stam
     p_total = get_total_charge_per_sec(net=net, action_id=action_id)
     E = np.asarray([net.node[request["id"]].energy for request in net.request_list])
     e = np.asarray([request["avg_energy"] for request in net.request_list])
-    third = nb_target_alive / len(net.target)
+    E_s = E - e * moving_time  # Energy when MC arrives
+    first = np.sum(e * p / E_s)
     second = np.sum(w * p_hat)
-    first = np.sum(e * p / E)
+    third = nb_target_alive / len(net.target)
     forth = (mc.capacity - (mc.energy - charging_time * p_total)) / mc.capacity
-    # print('At {}s, HF for action {}: {}, {}, {}, {}'.format(time_stamp, action_id, first, second, third, forth))
+    fifth = np.log(dist + 1)
+    # print('At {}s, HF for action {}: {}, {}, {}, {}, {}'.format(time_stamp, action_id, first, second, third, forth,
+    #                                                             fifth))
     if mc.energy - charging_time * p_total < 0:
-        return 0, 0, 0, 1
-    return first, second, third, forth
+        return 0, 0, 0, 1, 7
+    return first, second, third, forth, fifth
 
 
 def get_weight(net, mc, action_id, charging_time, receive_func=find_receiver):
