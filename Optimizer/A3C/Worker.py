@@ -110,7 +110,6 @@ class Worker(Server):  # Optimizer
             exit(100)
 
         heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp)
-        assert not torch.isnan(heuristic_policy).any(), "Heuristic policy contains Nan value"
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
@@ -119,7 +118,6 @@ class Worker(Server):  # Optimizer
         self.alpha_H *= self.theta_H
 
         # get charging time
-        charging_time = 0
         if action == self.nb_action - 1:
             charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
         else:
@@ -130,14 +128,13 @@ class Worker(Server):  # Optimizer
             dumpfile_writer = csv.writer(dumpfile)
             if self.step != 0:
                 dumpfile_writer.writerow([
-                    self.step, R, tensor2value(state_tensor), action, tensor2value(policy[action]),
+                    self.step, time_stamp, R, tensor2value(state_tensor), action, tensor2value(policy[action]),
                     tensor2value(heuristic_policy[action]), tensor2value(behavior_policy[action]),
                     charging_time
                 ])
             else:
-                dumpfile_writer.writerow(["step", "reward", "state", "action",
-                                          "policy_prob", "heuristic_prob", "behavior_prob",
-                                          "charging_time"])
+                dumpfile_writer.writerow(["step", "time_stamp", "reward", "state", "action",
+                                          "policy_prob", "heuristic_prob", "behavior_prob", "charging_time"])
 
         # record all transitioning and reward
         self.buffer.append(

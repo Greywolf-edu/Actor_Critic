@@ -81,17 +81,24 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
 
     target_monitoring_factor = target_monitoring_factor / (torch.sum(target_monitoring_factor) + 1e-6)
 
-    self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
-        if torch.sum(self_charging_factor) != 0 else 0
+    self_charging_factor = self_charging_factor / (torch.sum(self_charging_factor) + 1e-6)
 
     H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor)
 
     H_policy = torch.Tensor(H_policy)
-    H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy)) / torch.std(H_policy)
+    H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy))
     G = torch.exp(H_policy)
     H_policy = G / torch.sum(G)
-
     H_policy.requires_grad = False
+
+    if torch.isnan(H_policy).any():
+        print(energy_factor)
+        print(priority_factor)
+        print(target_monitoring_factor)
+        print(self_charging_factor)
+        print("Heuristic policy contains Nan value")
+        exit(120)
+
     return H_policy  # torch tensor size = #nb_action
 
 
