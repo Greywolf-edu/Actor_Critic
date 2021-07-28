@@ -28,9 +28,10 @@ def H_charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=
         p = para.alpha / (d + para.beta) ** 2
         p1 = 0
         for other_mc in net.mc_list:
-            if other_mc.id != mc.id and other_mc.get_status() == "charging":
+            if other_mc.id != mc.id and other_mc.get_status != 'deactivated' and other_mc.end != para.depot:
                 d = distance.euclidean(other_mc.current, node.location)
-                p1 += (para.alpha / (d + para.beta) ** 2) * (other_mc.end_time - time_stamp)
+                p1 += (para.alpha / (d + para.beta) ** 2) * \
+                      (other_mc.end_time - max(time_stamp, other_mc.arriving_time))
         if node.energy - time_move * node.avg_energy + p1 < energy_min and p - node.avg_energy > 0:
             s1.append((node.id, p, p1))
         if node.energy - time_move * node.avg_energy + p1 > energy_min and p - node.avg_energy < 0:
@@ -38,11 +39,11 @@ def H_charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=
     t = []
 
     for index, p, p1 in s1:
-        t.append((energy_min - net.node[index].energy + time_move * net.node[index].avg_energy - p1) / (
-                p - net.node[index].avg_energy))
+        t.append((energy_min - net.node[index].energy + time_move * net.node[index].avg_energy - p1) /
+                 (p - net.node[index].avg_energy))
     for index, p, p1 in s2:
-        t.append((energy_min - net.node[index].energy + time_move * net.node[index].avg_energy - p1) / (
-                p - net.node[index].avg_energy))
+        t.append((energy_min - net.node[index].energy + time_move * net.node[index].avg_energy - p1) /
+                 (p - net.node[index].avg_energy))
     dead_list = []
     for item in t:
         nb_dead = 0
@@ -77,6 +78,7 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
         distance_factor[action_id] = temp[4]
+        charging_time = temp[5]
     energy_factor = energy_factor / torch.sum(energy_factor) \
         if torch.sum(energy_factor) != 0 else 0
 
@@ -114,8 +116,9 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
 
 
 def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stamp=0, receive_func=find_receiver):
+    self_charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
     if action_id == optimizer.nb_action - 1:
-        return 0, 0, 0, 0, 0
+        return 0, 0, 0, 0, 0, self_charging_time
     theta = optimizer.charging_time_theta
     charging_time = H_charging_time_func(mc, net, action_id=action_id, time_stamp=time_stamp,
                                          theta=theta)
@@ -137,8 +140,8 @@ def heuristic_function(net=None, mc=None, optimizer=None, action_id=0, time_stam
     # print('At {}s, HF for action {}: {}, {}, {}, {}, {}'.format(time_stamp, action_id, first, second, third, forth,
     #                                                             fifth))
     if mc.energy - charging_time * p_total < 0:
-        return 0, 0, 0, 1, 7
-    return first, second, third, forth, fifth
+        return 0, 0, 0, 1, 7, charging_time
+    return first, second, third, forth, fifth, charging_time
 
 
 def get_weight(net, mc, action_id, charging_time, receive_func=find_receiver):

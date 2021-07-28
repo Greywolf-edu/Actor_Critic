@@ -12,10 +12,11 @@ class MobileCharger:
         self.is_self_charge = False  # is true if mc is charged
         self.is_active = False
 
-        self.start = start  # from location
-        self.end = end  # to location
-        self.current = start  # location now
-        self.end_time = -1  # end time is what ???
+        self.start = start  # departure position
+        self.end = end  # destination position
+        self.current = start  # current position
+        self.end_time = -1  # time finishing current action
+        self.arriving_time = -1  #  time arriving at current destination
         self.standing_duration = 0  # time duration of standing
 
         self.energy = energy  # energy now
@@ -62,6 +63,7 @@ class MobileCharger:
         self.end = network.charging_pos[next_location]
         print('MC #{} is moving to {} and will charge for {}s'.format(self.id, self.end, charging_time))
         moving_time = distance.euclidean(self.start, self.end) / self.velocity
+        self.arriving_time = time_stamp + moving_time
         self.end_time = time_stamp + moving_time + charging_time
 
     def run(self, net=None, time_stamp=0):
