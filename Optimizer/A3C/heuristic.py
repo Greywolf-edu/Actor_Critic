@@ -78,19 +78,19 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         self_charging_factor[action_id] = temp[3]
         distance_factor[action_id] = temp[4]
     energy_factor = energy_factor / torch.sum(energy_factor) \
-        if torch.sum(energy_factor) != 0 else 0
+        if torch.sum(energy_factor) != 0 else torch.zeros_like(energy_factor)
 
     priority_factor = priority_factor / torch.sum(priority_factor) \
-        if torch.sum(priority_factor) != 0 else 0
+        if torch.sum(priority_factor) != 0 else torch.zeros_like(priority_factor)
 
     target_monitoring_factor = target_monitoring_factor / torch.sum(target_monitoring_factor) \
-        if torch.sum(target_monitoring_factor) != 0 else 0
+        if torch.sum(target_monitoring_factor) != 0 else torch.zeros_like(target_monitoring_factor)
 
     self_charging_factor = self_charging_factor / torch.sum(self_charging_factor) \
-        if torch.sum(self_charging_factor) != 0 else 0
+        if torch.sum(self_charging_factor) != 0 else torch.zeros_like(self_charging_factor)
 
     distance_factor = distance_factor / torch.sum(distance_factor) \
-        if torch.sum(distance_factor) != 0 else 0
+        if torch.sum(distance_factor) != 0 else torch.zeros_like(distance_factor)
 
     H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor - distance_factor)
 
@@ -200,12 +200,9 @@ def get_all_path(net, receive_func=find_receiver):
 
 
 if __name__ == "__main__":
-    a = torch.rand(15) * random.gauss(0.011, 0.005)
-    d = 2 * (a - torch.mean(a)) / torch.std(a)
-    c = torch.exp(d)
-    b = c / torch.sum(c)
-    print(a)
-    print("new way", b)
+    a = torch.Tensor([0,0,0,0])
+    b = a / torch.sum(a) if torch.sum(a) != 0 else torch.zeros_like(a)
+    print(b)
     # c = torch.exp(a)
     # b = c/torch.sum(c)
     # print("old way", b)
