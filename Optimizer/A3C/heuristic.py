@@ -65,12 +65,13 @@ def H_charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=
         return 0
 
 
-def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
+def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0, charging_time_limit=10):
     energy_factor = torch.ones_like(torch.Tensor(worker.action_space))
     priority_factor = torch.ones_like(torch.Tensor(worker.action_space))
     target_monitoring_factor = torch.ones_like(torch.Tensor(worker.action_space))
     self_charging_factor = torch.ones_like(torch.Tensor(worker.action_space))
     distance_factor = torch.ones_like(torch.Tensor(worker.action_space))
+    charging_time_factor = torch.ones_like((torch.Tensor(worker.action_space)))
     for action_id in worker.action_space:
         temp = heuristic_function(net=net, mc=mc, optimizer=worker, action_id=action_id, time_stamp=time_stamp)
         energy_factor[action_id] = temp[0]
@@ -78,7 +79,7 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
         target_monitoring_factor[action_id] = temp[2]
         self_charging_factor[action_id] = temp[3]
         distance_factor[action_id] = temp[4]
-        charging_time = temp[5]
+        charging_time_factor[action_id] = temp[5] - charging_time_limit
     energy_factor = energy_factor / torch.sum(energy_factor) \
         if torch.sum(energy_factor) != 0 else 0
 
@@ -94,7 +95,10 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0):
     distance_factor = distance_factor / torch.sum(distance_factor) \
         if torch.sum(distance_factor) != 0 else 0
 
-    H_policy = (energy_factor + priority_factor + target_monitoring_factor - self_charging_factor - distance_factor)
+    charging_time_factor = 1 / (1 + torch.exp((-1/2)*charging_time_factor))
+
+    H_policy = ((energy_factor + priority_factor + target_monitoring_factor)*charging_time_factor
+                - self_charging_factor - distance_factor)
 
     H_policy = torch.Tensor(H_policy)
     H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy))
