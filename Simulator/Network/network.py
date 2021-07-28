@@ -3,21 +3,28 @@ import csv
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from network_method import uniform_com_func, to_string, count_package_function, network_partition
+from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, network_partition
+from Optimizer.A3C.Server_method import synchronize
+from Optimizer.A3C.Worker_method import all_asynchronize
 
 
 class Network:
-    def __init__(self, list_node=None, mc_list=None, target=None, package_size=400, nb_charging_pos=81):
+    def __init__(self, list_node=None, mc_list=None, target=None, server=None, package_size=400, nb_charging_pos=81):
         self.node = list_node
         self.set_neighbor()
         self.set_level()
         self.mc_list = mc_list
         self.target = target
         self.charging_pos = []
+        self.request_list = []
+        self.request_id = []
         self.package_size = package_size
         self.nb_charging_pos = nb_charging_pos
         self.active = False
         self.package_lost = False
+
+        self.Server = server
+        self.T = para.A3C_synchronize_T
 
     def set_neighbor(self):
         for node in self.node:
@@ -40,30 +47,42 @@ class Network:
 
     def partition(self, func=network_partition):
         self.charging_pos = func(self)
-        for mc in self.mc_list:
-            mc.optimizer.update_charging_pos(self.charging_pos)
+        # for mc in self.mc_list:
+        #     mc.optimizer.update_charging_pos(self.charging_pos)
         self.active = True
 
     def communicate(self, func=uniform_com_func):
         return func(self)
 
     def run_per_second(self, t):
+        # ========= Synchronize at t = 0 and t % T == 0 ===========
+        if t == 0:
+            if self.Server is None:
+                print("A3C without global Server ??? Recheck your declaration")
+                exit(100)
+            else:
+                synchronize(self.Server, self.mc_list)
+
+        if t % self.T == 0 and t > para.SIM_partition_time:  # after T (s)
+            print(f"Synchronize at time {t}")
+            all_asynchronize(MCs=self.mc_list, Server=self.Server)
+            synchronize(self.Server, self.mc_list)
+        # ==========================================================
         state = self.communicate()
-        request_id = []
+        self.request_id = []
         for index, node in enumerate(self.node):
             if node.energy < node.energy_thresh:
-                for mc in self.mc_list:
-                    node.request(optimizer=mc.optimizer, t=t)
-                request_id.append(index)
+                node.request(network=self, t=t)
+                self.request_id.append(index)
             else:
                 node.is_request = False
-        if request_id:
+        if self.request_id:
             for index, node in enumerate(self.node):
-                if index not in request_id and (t - node.check_point[-1]["time"]) > 50:
+                if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
             for mc in self.mc_list:
-                mc.run(network=self, time_stem=t, net=self)
+                mc.run(net=self, time_stem=t)
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):
@@ -76,11 +95,11 @@ class Network:
         t = 0
         while t <= max_time:
             t = t + 1
-            if (t - 1) % 100 == 0:
+            if (t - 1) % para.SIM_log_frequency == 0:
                 print("time = ", t, ", lowest energy node: ", self.node[self.find_min_node()].energy, "at",
                       self.node[self.find_min_node()].location)
-                print('\tnumber of dead node: {}'.format(self.count_dead_node()))
-                print('\tnumber of package: {}'.format(self.count_package()))
+                print('\tnumber of dead sensor nodes: {}'.format(self.count_dead_node()))
+                print('\tnumber of monitored targets: {}'.format(self.count_package()))
                 with open(file_name, 'a') as information_log:
                     node_writer = csv.DictWriter(information_log, fieldnames=["time", "nb_dead_node", "nb_package"])
                     node_writer.writerow(
@@ -89,7 +108,7 @@ class Network:
                     print("\tMC#{} at{} is {}".format(mc.id, mc.current, mc.get_status()))
 
             ######################################
-            if t == 200:
+            if t == para.SIM_partition_time:
                 self.partition()
             ######################################
 
@@ -124,7 +143,7 @@ class Network:
         min_energy = 10 ** 10
         min_id = -1
         for node in self.node:
-            if node.energy < min_energy:
+            if min_energy > node.energy > 0:
                 min_energy = node.energy
                 min_id = node.id
         return min_id
@@ -152,7 +171,7 @@ class Network:
         t = 0
         while t <= 2000000:
             t = t + 1
-            if (t - 1) % 100 == 0:
+            if (t - 1) % para.SIM_log_frequency == 0:
                 node_log = open('log/dead_node.csv', 'a')
                 node_writer = csv.DictWriter(node_log, fieldnames=['time', 'dead_node'])
                 node_writer.writerow({"time": t, "dead_node": self.count_dead_node()})

@@ -1,0 +1,5 @@
+[Longnt]: Update charging_time function
+[Longnt]: Change request_list to global
+[Longnt]: Fix optimizer.update_charging_pos error
+[Longnt]: Fix nb_state_feature
+[Longnt]: Add update_log.txt

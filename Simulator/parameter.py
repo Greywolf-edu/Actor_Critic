@@ -10,3 +10,16 @@ EFS = 0.00000000001
 EMP = 0.0000000000000013
 prob = 1.0
 E_mc_thresh = 10
+
+# A3C param
+A3C_k_step = 3
+A3C_synchronize_T = 200
+A3C_gamma = 0.95
+A3C_beta_entropy = 1e-2
+A3C_serverActor_lr = 1e-3
+A3C_serverCritic_lr = 1e-3
+
+# Simulation time
+SIM_duration = 10000
+SIM_partition_time = 200
+SIM_log_frequency = 100

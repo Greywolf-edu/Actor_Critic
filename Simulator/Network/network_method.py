@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 import Simulator.parameter as para
-from package import Package
+from Simulator.Network.package import Package
 
 
 def uniform_com_func(net):
@@ -47,7 +47,7 @@ def network_partition(network=None):
     print(Y)
     d = np.linalg.norm(Y)
     Y = Y / d
-    kmeans = KMeans(n_clusters=network.nb_chargepos, random_state=0).fit(X, sample_weight=Y)
+    kmeans = KMeans(n_clusters=network.nb_charging_pos, random_state=0).fit(X, sample_weight=Y)
     charging_pos = []
     for pos in kmeans.cluster_centers_:
         charging_pos.append((int(pos[0]), int(pos[1])))

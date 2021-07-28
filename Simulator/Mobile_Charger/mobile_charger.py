@@ -1,11 +1,11 @@
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from mobilecharger_method import get_location, charging
+from Simulator.Mobile_Charger.mobilecharger_method import get_location, charging
 
 
 class MobileCharger:
-    def __init__(self, id,  energy=None, e_move=None, start=para.depot, end=para.depot, velocity=None,
+    def __init__(self, id, energy=None, e_move=None, start=para.depot, end=para.depot, velocity=None,
                  e_self_charge=None, capacity=None, optimizer=None):
         self.id = id
         self.is_stand = False  # is true if mc stand and charge
@@ -15,7 +15,8 @@ class MobileCharger:
         self.start = start  # from location
         self.end = end  # to location
         self.current = start  # location now
-        self.end_time = -1
+        self.end_time = -1  # end time is what ???
+        self.standing_duration = 0  # time duration of standing
 
         self.energy = energy  # energy now
         self.capacity = capacity  # capacity of mc
@@ -32,7 +33,7 @@ class MobileCharger:
             return "moving"
         if not self.is_self_charge:
             return "charging"
-        return "self_charging" 
+        return "self_charging"
 
     def update_location(self, func=get_location):
         self.current = func(self)
@@ -56,26 +57,31 @@ class MobileCharger:
             self.is_self_charge = False
 
     def get_next_location(self, network, time_stem):
-        next_location, charging_time = self.optimizer.update(self, network, time_stem)
+        next_location, charging_time = self.optimizer.get_action(network=network, mc=self, time_stem=time_stem)
         self.start = self.current
-        self.end = next_location
+        self.end = network.charging_pos[next_location]
+        print('MC #{} is moving to {} and will charge for {}s'.format(self.id, self.end, charging_time))
         moving_time = distance.euclidean(self.start, self.end) / self.velocity
         self.end_time = time_stem + moving_time + charging_time
 
-    def run(self, network, time_stem, net=None):
+    def run(self, net=None, time_stem=0):
         # print(self.energy, self.start, self.end, self.current)
-        if ((not self.is_active) and self.optimizer.list_request) or abs(time_stem - self.end_time) < 1:
+        if ((not self.is_active) and net.request_list) or abs(time_stem - self.end_time) < 1:
+            if not self.is_active:
+                print('activate MC #{}'.format(self.id))
+            else:
+                print('MC #{} is finding next location'.format(self.id))
             self.is_active = True
             new_list_request = []
-            for request in self.optimizer.list_request:
+            for request in net.request_list:
                 if net.node[request["id"]].energy < net.node[request["id"]].energy_thresh:
                     new_list_request.append(request)
                 else:
                     net.node[request["id"]].is_request = False
-            self.optimizer.list_request = new_list_request
-            if not self.optimizer.list_request:
+            net.request_list = new_list_request
+            if not net.request_list:
                 self.is_active = False
-            self.get_next_location(network=network, time_stem=time_stem)
+            self.get_next_location(network=net, time_stem=time_stem)
         else:
             if self.is_active:
                 if not self.is_stand:

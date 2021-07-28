@@ -1,7 +1,10 @@
-from Optimizer.Actor_Critic.Actor_Critic import Actor_Critic
+from Optimizer.A3C.Server import Server
+from Optimizer.A3C.Worker import Worker
+
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
 from Simulator.Mobile_Charger.mobile_charger import MobileCharger
+from Simulator.parameter import SIM_duration
 
 import random
 import pandas as pd
@@ -12,7 +15,7 @@ from scipy.stats import sem, t, tmean
 
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
-df = pd.read_csv("new_data/" + experiment_type + ".csv")
+df = pd.read_csv("data/" + experiment_type + ".csv")
 experiment_index = int(input('experiment_index: '))  # [0..6]
 
 # | Experiment_index  | 0   | 1   | 2     | 3   | 4   | 5     | 6     | 7   | 8    |
@@ -36,7 +39,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(3):
+for nb_run in range(1):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -49,26 +52,40 @@ for nb_run in range(3):
         node = Node(location=location, com_ran=com_ran, energy=energy, energy_max=energy_max, id=i,
                     energy_thresh=0.4 * energy, prob=prob)
         list_node.append(node)
+
+    # Global optimizer
+    nb_state_feature = nb_mc*3 + len(list_node)*4
+    global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
     mc_list = []
     optimizer_list = []
     for id in range(nb_mc):
-        optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
-        optimizer_list.append(optimizer)
+        # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
+        optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id)
+        optimizer_list.append(optimizer) # List worker
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
                            e_self_charge=df.e_mc[experiment_index], velocity=df.velocity[experiment_index],
                            optimizer=optimizer)
         mc_list.append(mc)
     target = [int(item) for item in df.target[experiment_index].split(',')]
-    net = Network(list_node=list_node, mc_list=mc_list, target=target, package_size=package_size, nb_chargepos=clusters)
+    net = Network(list_node=list_node, mc_list=mc_list, target=target,
+                  server=global_Optimizer, package_size=package_size, nb_charging_pos=clusters)
     print(
         "experiment {} #{}:\n\tnode: {}, target: {}, prob: {}, mc: {}, alpha: {}, cluster: {}, package_size: {}".format(
             experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, alpha, clusters,
             package_size))
     file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
-    temp = net.simulate(max_time=1000000, file_name=file_name)
-    life_time.append(temp[0])
-    result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
+    try:
+        temp = net.simulate(max_time=SIM_duration, file_name=file_name)
+        life_time.append(temp[0])
+        result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
+
+    finally:
+        # free memory space
+        print("Free memory space")
+        del global_Optimizer
+        for optimizer in optimizer_list:
+            del optimizer
 
 confidence = 0.95
 h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)

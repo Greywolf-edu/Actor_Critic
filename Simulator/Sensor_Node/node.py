@@ -2,7 +2,7 @@ import math
 from scipy.spatial import distance
 
 import Simulator.parameter as para
-from node_method import to_string, find_receiver, request_function, estimate_average_energy
+from Simulator.Sensor_Node.node_method import to_string, find_receiver, request_function, estimate_average_energy
 
 
 class Node:
@@ -111,10 +111,10 @@ class Node:
             a = [1 for neighbor in self.neighbor if net.node[neighbor].is_active]
             self.is_active = True if len(a) > 0 else False
 
-    def request(self, optimizer, t, request_func=request_function):
+    def request(self, network=None, t=0, request_func=request_function):
         """
         send a message to mc if the energy is below a threshold
-        :param mc: mobile charger
+        :param network: network
         :param t: time to send request
         :param request_func: structure of message
         :return: None
@@ -122,7 +122,7 @@ class Node:
         self.set_check_point(t)
         # print(self.check_point)
         if not self.is_request:
-            request_func(self, optimizer, t)
+            request_func(self, network, t)
             self.is_request = True
 
     def print_node(self, func=to_string):
