@@ -9,7 +9,7 @@ def synchronize(server, mc_list):
     :param server: cloud
     :param mc_list: list of MC
     """
-    with open("log/weight_record/actor_param.txt", "a+") as dumpfile:
+    with open(para.FILE_debug_update, "a+") as dumpfile:
         dumpfile.write("One update step\n")
 
     for MC in mc_list:
@@ -40,7 +40,7 @@ def zero_net_weights(net):
 
 
 def debug_weights_update(param_data, grad):
-    with open("log/weight_record/param.txt", "a+") as dumpfile:
+    with open(para.FILE_debug_update, "a+") as dumpfile:
         dumpfile.write(str(torch.sum(param_data)) + "\t" + str(torch.sum(grad)) + "\n")
 
 

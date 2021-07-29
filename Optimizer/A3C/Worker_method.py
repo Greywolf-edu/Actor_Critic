@@ -20,10 +20,10 @@ def reward_function(Worker, mc, network, time_stamp):
             e_list.append(each_node.energy)
 
     print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    if Worker.step < 100:
-        return -1 / min(e_list)
-    else:
-        return min(e_list)
+    # if Worker.step < 100:
+    #     return -1 / min(e_list)
+    # else:
+    return min(e_list)
 
 
 def TERMINAL_STATE(state_tensor):

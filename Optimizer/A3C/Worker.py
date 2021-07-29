@@ -1,3 +1,5 @@
+import math
+
 import torch
 import numpy as np
 import Simulator.parameter as para
@@ -27,7 +29,7 @@ class Worker(Server):  # Optimizer
         self.buffer = []
         self.action_space = [i for i in range(self.nb_action)]
 
-    def create_experience(self, state, action,
+    def create_experience(self, state, action, charging_time,
                           policy_prob, behavior_prob,
                           reward=None):
         experience = {
@@ -35,6 +37,7 @@ class Worker(Server):  # Optimizer
             "reward": reward,               # record reward observe in this state
             "state": state,                 # record state vector t
             "action": action,               # record action at step t
+            "charging_time": charging_time, # record charging time of the action
             "policy_prob": policy_prob,     # record policy prob(action t)
             "behavior_prob": behavior_prob  # record behavior prob(action t)
         }
@@ -74,7 +77,10 @@ class Worker(Server):  # Optimizer
             value_loss.backward(retain_graph=True)
 
             tmp_diff = R - value
-            truncated_mu = min(mu, para.A3C_clipping_mu)
+            truncated_mu = min(mu, para.A3C_clipping_mu_upper) \
+                if min(mu, para.A3C_clipping_mu_upper) > para.A3C_clipping_mu_lower \
+                else para.A3C_clipping_mu_lower
+
             policy_loss = self.policy_loss_fn(policy=policy,
                                               temporal_diff=tensor2value(tmp_diff),
                                               action=self.buffer[j]["action"]) * truncated_mu
@@ -84,7 +90,7 @@ class Worker(Server):  # Optimizer
             policy_total_loss.backward(retain_graph=True)
 
             if debug:
-                with open("log/weight_record/loss.csv", "a+") as dumpfile:
+                with open(para.FILE_debug_loss, "a+") as dumpfile:
                     dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{truncated_mu}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
             mu /= M[j]
@@ -95,8 +101,9 @@ class Worker(Server):  # Optimizer
 
     def get_action(self, network=None, mc=None, time_stamp=None):
         R = 0
-        if self.step != 0:
-            R = reward_function(Worker=self, mc=mc, network=network, time_stamp=time_stamp)
+        if self.step > 0:
+            R = reward_function(Worker=self, mc=mc, network=network, time_stamp=time_stamp) \
+                if self.buffer[-1]["charging_time"] > 0 else para.A3C_bad_reward
 
         state_tensor = extract_state_tensor(self, network)
         policy = self.get_policy(state_tensor)
@@ -139,8 +146,11 @@ class Worker(Server):  # Optimizer
         # record all transitioning and reward
         self.buffer.append(
             self.create_experience(
-                state=state_tensor, action=action,
-                policy_prob=tensor2value(policy[action]), behavior_prob=tensor2value(behavior_policy[action]),
+                state=state_tensor,
+                action=action,
+                charging_time= charging_time,
+                policy_prob=tensor2value(policy[action]),
+                behavior_prob=tensor2value(behavior_policy[action]),
                 reward=R
             )
         )

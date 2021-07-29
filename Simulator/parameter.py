@@ -22,19 +22,25 @@ A3C_serverCritic_lr = 1e-3
 #A3C week2
 A3C_alpha_heuristic = 1
 A3C_decay_heuristic = 0.998
-A3C_clipping_mu = 5
+A3C_clipping_mu_upper = 5
+A3C_clipping_mu_lower = 0.01
 A3C_deterministic_factor = 50
 A3C_serverBody_lr = 1e-3
-A3C_start_Body_lr = 0.5
-A3C_start_Actor_lr = 0.25
-A3C_start_Critic_lr = 0.25
+A3C_start_Body_lr = 0.125
+A3C_start_Actor_lr = 0.075
+A3C_start_Critic_lr = 0.075
 A3C_decay_lr = 0.9397455978
+A3C_bad_reward = 0
 
 # Simulation
 SIM_duration = 10000
-SIM_partition_time = 200
+SIM_partition_time = 300
 SIM_log_frequency = 100
 SIM_plot_network = False
 
 # Node
 NODE_e_thresh_ratio = 0.4
+
+# dumpfile
+FILE_debug_update = "log/weight_record/param.txt"
+FILE_debug_loss = "log/weight_record/loss.csv"

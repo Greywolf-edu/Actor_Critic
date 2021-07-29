@@ -14,10 +14,11 @@ import csv
 from scipy.stats import sem, t, tmean
 
 import os
+from Simulator.parameter import FILE_debug_loss
 
 os.system("rm log/weight_record/*")
 os.system("rm log/Worker*")
-with open("log/weight_record/loss.csv", "w") as dumpfile:
+with open(FILE_debug_loss, "w") as dumpfile:
     dumpfile.write("Time\tWorker\tTD\tmu\tPLoss\tELoss\tVLoss\n")
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
