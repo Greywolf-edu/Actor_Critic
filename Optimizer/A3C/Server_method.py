@@ -3,6 +3,7 @@ import random
 import torch
 import Simulator.parameter as para
 
+
 def synchronize(server, mc_list):
     """
     This function synchronize all MC's networks with Server's

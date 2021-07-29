@@ -45,8 +45,8 @@ class Worker(Server):  # Optimizer
         return experience
 
     def policy_loss_fn(self, policy, action, temporal_diff):
-        return - torch.sum(temporal_diff[0] * torch.log(policy) * torch.Tensor(one_hot(size=self.nb_action,
-                                                                                       index=action)))
+        return - temporal_diff[0] * torch.log(policy[action])
+                          # * torch.Tensor(one_hot(size=self.nb_action,index=action)))
 
     def entropy_loss_fn(self, policy):
         return self.beta_entropy * torch.sum(policy * torch.log(policy))
@@ -116,13 +116,13 @@ class Worker(Server):  # Optimizer
             print("Error Nan policy")
             exit(100)
 
-        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp)
+        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp) if self.alpha_H > 0.1 else 0
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
 
         # apply decay on alpha_H
-        self.alpha_H *= self.theta_H
+        self.alpha_H *= self.theta_H if self.alpha_H > 0.1 else 0 # stop heuristic
 
         # get charging time
         if action == self.nb_action - 1:
