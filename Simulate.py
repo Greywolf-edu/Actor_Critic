@@ -69,12 +69,16 @@ for nb_run in range(1):
     global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
 
     # If trained weights are supplied then load in:
+    experiment = f"_{experiment_type}_{experiment_index}.pth"
     if para.MODEL_load:
-        if Path(para.MODEL_save_actor_path).exists():
+        if Path(para.MODEL_save_actor_path + experiment).exists():
+            print("Loading trained actor_net's weights ....")
             global_Optimizer.actor_net = torch.load(para.MODEL_save_actor_path)
-        if Path(para.MODEL_save_critic_path).exists():
+        if Path(para.MODEL_save_critic_path + experiment).exists():
+            print("Loading trained critic_net's weights ....")
             global_Optimizer.critic_net = torch.load(para.MODEL_save_critic_path)
-        if Path(para.MODEL_save_body_path).exists():
+        if Path(para.MODEL_save_body_path + experiment).exists():
+            print("Loading trained body_net's weights ....")
             global_Optimizer.body_net = torch.load(para.MODEL_save_body_path)
 
     mc_list = []
@@ -105,9 +109,9 @@ for nb_run in range(1):
         # free memory space
         print("Free memory space")
         if para.MODEL_save:
-            torch.save(global_Optimizer.body_net.state_dict(), para.MODEL_save_body_path)
-            torch.save(global_Optimizer.actor_net.state_dict(), para.MODEL_save_actor_path)
-            torch.save(global_Optimizer.critic_net.state_dict(), para.MODEL_save_critic_path)
+            torch.save(global_Optimizer.body_net.state_dict(), para.MODEL_save_body_path + experiment)
+            torch.save(global_Optimizer.actor_net.state_dict(), para.MODEL_save_actor_path + experiment)
+            torch.save(global_Optimizer.critic_net.state_dict(), para.MODEL_save_critic_path + experiment)
 
         del global_Optimizer
         for optimizer in optimizer_list:

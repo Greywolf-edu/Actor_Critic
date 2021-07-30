@@ -52,9 +52,9 @@ FILE_debug_Nan_heuristic = "log/weight_record/Nan_heurisitc.txt"
 
 # model savings
 MODEL_save = True
-MODEL_load = False
-MODEL_save_actor_path = "Model_weights/A3C/actor.pth"
-MODEL_save_critic_path = "Model_weights/A3C/critic.pth"
-MODEL_save_body_path = "Model_weights/A3C/body.pth"
+MODEL_load = True
+MODEL_save_actor_path = "Model_weights/A3C/actor"
+MODEL_save_critic_path = "Model_weights/A3C/critic"
+MODEL_save_body_path = "Model_weights/A3C/body"
 
 
