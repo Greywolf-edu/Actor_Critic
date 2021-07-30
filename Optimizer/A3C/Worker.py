@@ -1,5 +1,3 @@
-import math
-
 import torch
 import numpy as np
 import Simulator.parameter as para
@@ -66,7 +64,7 @@ class Worker(Server):  # Optimizer
         for i in range(t):              # 0, 1
             j = t - 1 - i               # 1, 0
             mu *= M[j]
-            R = self.buffer[j]["reward"] + self.gamma * R
+            R = self.buffer[j+1]["reward"] + self.gamma * R  # r = R[2] + gamma * V(S[2])
 
             state_vector = self.buffer[j]["state"]
             value = self.get_value(state_vector)
@@ -74,10 +72,11 @@ class Worker(Server):  # Optimizer
 
             entropy_loss = self.entropy_loss_fn(policy=policy)
             value_loss = self.value_loss_fn(value=value, reward=R)
-            total_value_loss = value_loss + entropy_loss
+            total_value_loss = value_loss - entropy_loss
             total_value_loss.backward(retain_graph=True)
 
-            tmp_diff = R - value
+            tmp_diff = R - tensor2value(value)[0]
+
             truncated_mu = min(mu, para.A3C_clipping_mu_upper) \
                 if min(mu, para.A3C_clipping_mu_upper) > para.A3C_clipping_mu_lower \
                 else para.A3C_clipping_mu_lower
@@ -92,7 +91,7 @@ class Worker(Server):  # Optimizer
 
             if debug:
                 with open(para.FILE_debug_loss, "a+") as dumpfile:
-                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{truncated_mu}\t{tensor2value(policy_loss)[0]}\t"
+                    dumpfile.write(f"{time_step}\t{self.id}\t{tmp_diff}\t{truncated_mu}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
 
     def reset_grad(self):
@@ -119,6 +118,11 @@ class Worker(Server):  # Optimizer
         heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp) if self.alpha_H > 0.1 else 0
 
         behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+        # if torch.sum(behavior_policy).detach() != 1:
+        #     print(behavior_policy)
+        #     print(torch.sum(behavior_policy))
+        #     exit(1)
+
         action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
 
         # apply decay on alpha_H
@@ -133,15 +137,21 @@ class Worker(Server):  # Optimizer
 
         with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:
             dumpfile_writer = csv.writer(dumpfile)
-            if self.step != 0:
-                dumpfile_writer.writerow([
-                    self.step, time_stamp, R, tensor2value(state_tensor), action, tensor2value(policy[action]),
-                    tensor2value(heuristic_policy[action]), tensor2value(behavior_policy[action]),
-                    charging_time
-                ])
-            else:
+            if self.step == 0:
                 dumpfile_writer.writerow(["step", "time_stamp", "reward", "state", "action",
                                           "policy_prob", "heuristic_prob", "behavior_prob", "charging_time"])
+            dumpfile_writer.writerow([
+                self.step,
+                time_stamp,
+                R,
+                tensor2value(state_tensor),
+                action,
+                tensor2value(policy[action]),
+                tensor2value(heuristic_policy[action]),
+                tensor2value(behavior_policy[action]),
+                charging_time
+            ])
+
 
         # record all transitioning and reward
         self.buffer.append(

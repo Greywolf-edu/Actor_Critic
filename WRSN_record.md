@@ -22,7 +22,18 @@
    - Đưa entropy loss vào cùng value loss
    - Chuyển Gradient Descent thành Ascent
    - Cho phép đạo hàm temporal difference với policy loss
-   - Chuyển code thành multithreading trong hàm run_per_sec của network và hàm all_asynchronize của Worker_method
+   - Chuyển code thành multithreading trong hàm all_asynchronize của Worker_method
 2. Nhận xét:
    - mu là tỉ lệ giữa policy_prob và behavior_prob, mu nên tiến từ 0 đến 1 để thể hiện rằng AC học theo Heuristic
    - Tuy nhiên mu đang có xu hướng giảm, có thể là lỗi code => cần debug
+
+**30/07/2021 - 21PM**:
+1. Thay đổi:
+   - Tìm được lỗi logic trong hàm accumulate của worker
+   - Thêm folder Model_weights/A3C để lưu lại các weights:
+     + body_net's weights
+     + critic_net's weights
+     + actor_net's weights
+   -> Các net này được train liên tục mỗi khi chạy mới
+2. Nhiệm vụ:
+   - Chuyển global_Optimizer ra ngoài vòng lặp for của nb_run

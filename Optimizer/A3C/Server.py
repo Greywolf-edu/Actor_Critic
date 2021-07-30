@@ -4,7 +4,7 @@ import Simulator.parameter as para
 from Optimizer.A3C.Server_method import update_gradient, zero_net_weights
 
 
-class Server(nn.Module):
+class Server():
     def __init__(self, nb_state_feature, nb_action, name):
         super(Server, self).__init__()
 

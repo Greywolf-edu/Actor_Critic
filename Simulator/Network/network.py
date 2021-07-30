@@ -86,12 +86,14 @@ class Network:
                 if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
-            pool = Pool(len(self.mc_list))
+            # pool = Pool(len(self.mc_list))
+            # for mc in self.mc_list:
+            #     pool.apply_async(mc.run, (self, t))
+            # pool.close()
+            # pool.join()
+            # pool.terminate()
             for mc in self.mc_list:
-                pool.apply_async(mc.run, (self, t))
-            pool.close()
-            pool.join()
-            pool.terminate()
+                mc.run(self, t)
 
         return state
 

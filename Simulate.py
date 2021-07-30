@@ -1,3 +1,5 @@
+import torch
+
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker import Worker
 
@@ -14,11 +16,13 @@ import csv
 from scipy.stats import sem, t, tmean
 
 import os
-from Simulator.parameter import FILE_debug_loss
+from pathlib import Path
+import Simulator.parameter as para
 
 os.system("rm log/weight_record/*")
 os.system("rm log/Worker*")
-with open(FILE_debug_loss, "w") as dumpfile:
+
+with open(para.FILE_debug_loss, "w") as dumpfile:
     dumpfile.write("Time\tWorker\tTD\tmu\tPLoss\tELoss\tVLoss\n")
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
@@ -63,6 +67,16 @@ for nb_run in range(1):
     # Global optimizer
     nb_state_feature = nb_mc * 3 + (clusters + 1) * 4
     global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
+
+    # If trained weights are supplied then load in:
+    if para.MODEL_load:
+        if Path(para.MODEL_save_actor_path).exists():
+            global_Optimizer.actor_net = torch.load(para.MODEL_save_actor_path)
+        if Path(para.MODEL_save_critic_path).exists():
+            global_Optimizer.critic_net = torch.load(para.MODEL_save_critic_path)
+        if Path(para.MODEL_save_body_path).exists():
+            global_Optimizer.body_net = torch.load(para.MODEL_save_body_path)
+
     mc_list = []
     optimizer_list = []
     for id in range(nb_mc):
@@ -90,6 +104,11 @@ for nb_run in range(1):
     finally:
         # free memory space
         print("Free memory space")
+        if para.MODEL_save:
+            torch.save(global_Optimizer.body_net.state_dict(), para.MODEL_save_body_path)
+            torch.save(global_Optimizer.actor_net.state_dict(), para.MODEL_save_actor_path)
+            torch.save(global_Optimizer.critic_net.state_dict(), para.MODEL_save_critic_path)
+
         del global_Optimizer
         for optimizer in optimizer_list:
             del optimizer

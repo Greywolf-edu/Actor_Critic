@@ -3,6 +3,7 @@ import numpy as np
 from Optimizer.A3C.heuristic import H_charging_time_func, H_get_heuristic_policy
 from Simulator.parameter import A3C_clip_grad
 from multiprocessing.pool import ThreadPool as Pool
+import Simulator.parameter as para
 
 
 def get_nearest_charging_pos(current_location, charging_pos_list):
@@ -21,10 +22,10 @@ def reward_function(Worker, mc, network, time_stamp):
             e_list.append(each_node.energy)
 
     print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    # if Worker.step < 100:
-    #     return -1 / min(e_list)
-    # else:
-    return min(e_list)
+    if Worker.step < para.A3C_possitive_learning_start:
+        return -1 / min(e_list)
+    else:
+        return min(e_list)
 
 
 def TERMINAL_STATE(state_tensor):
@@ -104,7 +105,7 @@ def extract_state_tensor_v2(worker, net):
 
 def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.1):
     return min(H_charging_time_func(mc=mc, net=net, action_id=action_id, time_stamp=time_stamp, theta=theta),
-               1000)
+               para.A3C_max_charging_time)
     # return 150
 
 
@@ -132,27 +133,27 @@ def asynchronize(Worker, Server, time_step):  # MC sends gradient to Server
     :param Server: cloud
     This function perform asynchronize update to the cloud
     """
-    try:
-        print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
-        if len(Worker.buffer) >= 2:
-            Worker.accumulate_gradient(time_step=time_step)
-            # networks = (Worker.actor_net, Worker.critic_net)
-            networks = Worker.net
-            Server.update_gradient_server(networks)
+    # try:
+    print(f"Worker id_{Worker.id} asynchronized with len(buffer): {len(Worker.buffer)}")
+    if len(Worker.buffer) >= 2:
+        Worker.accumulate_gradient(time_step=time_step)
+        # networks = (Worker.actor_net, Worker.critic_net)
+        networks = Worker.net
+        Server.update_gradient_server(networks)
 
-            # clean gradient
-            Worker.reset_grad()
-            # clear record
-            lastBuffer = Worker.buffer[-1]
-            Worker.buffer.clear()
-            # restore current state for next use
-            Worker.buffer.append(lastBuffer)
-            return True
-        else:
-            print(f"Worker id_{Worker.id} has nothing to asynchronize")
-            return False
-    except:
-        print("Multithreading error in asynchronize function")
+        # clean gradient
+        Worker.reset_grad()
+        # clear record
+        lastBuffer = Worker.buffer[-1]
+        Worker.buffer.clear()
+        # restore current state for next use
+        Worker.buffer.append(lastBuffer)
+        return True
+    else:
+        print(f"Worker id_{Worker.id} has nothing to asynchronize")
+        return False
+    # except:
+    #     print("Multithreading error in asynchronize function")
 
 
 def all_asynchronize(MCs, Server, moment=None):
