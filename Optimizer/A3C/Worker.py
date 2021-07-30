@@ -6,7 +6,7 @@ import Simulator.parameter as para
 from Optimizer.A3C.Server import Server
 from Optimizer.A3C.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func, get_heuristic_policy, \
-    extract_state_tensor_v2, one_hot, tensor2value
+    extract_state_tensor_v2, one_hot, tensor2value, CLIP_GRAD
 
 import csv
 
@@ -45,36 +45,37 @@ class Worker(Server):  # Optimizer
         return experience
 
     def policy_loss_fn(self, policy, action, temporal_diff):
-        return - temporal_diff[0] * torch.log(policy[action])
+        return temporal_diff * torch.log(policy[action])
                           # * torch.Tensor(one_hot(size=self.nb_action,index=action)))
 
     def entropy_loss_fn(self, policy):
-        return self.beta_entropy * torch.sum(policy * torch.log(policy))
+        return self.beta_entropy * torch.mean(policy * torch.log(policy))
 
     def value_loss_fn(self, value, reward):
-        return (1/2) * torch.pow(reward - value, 2)
+        return - (1/2) * torch.pow(reward - value, 2)
 
     def accumulate_gradient(self, time_step=None, debug=True):
         # i.e. (R,S,A) = [(R0,S0,A0),(R1,S1,A1),(R2,S2,A2)]
         R = 0 if TERMINAL_STATE(self.buffer[-1]["state"]) \
-            else self.get_value(self.buffer[-1]["state"])      # R[2]
+            else tensor2value(self.get_value(self.buffer[-1]["state"]))[0]      # R[2]
 
         t = len(self.buffer) - 1        # t = 2
         M = [self.buffer[i]["policy_prob"] / self.buffer[i]["behavior_prob"] for i in range(t)]
         mu = 1
-        for i in range(t):              # mu = pi(A0|S0)/b(A0|S0) * pi(A1|S1)/b(A1|S1)
-            mu *= M[i]
 
         for i in range(t):              # 0, 1
             j = t - 1 - i               # 1, 0
+            mu *= M[j]
             R = self.buffer[j]["reward"] + self.gamma * R
 
             state_vector = self.buffer[j]["state"]
             value = self.get_value(state_vector)
             policy = self.get_policy(state_vector)
 
+            entropy_loss = self.entropy_loss_fn(policy=policy)
             value_loss = self.value_loss_fn(value=value, reward=R)
-            value_loss.backward(retain_graph=True)
+            total_value_loss = value_loss + entropy_loss
+            total_value_loss.backward(retain_graph=True)
 
             tmp_diff = R - value
             truncated_mu = min(mu, para.A3C_clipping_mu_upper) \
@@ -82,18 +83,17 @@ class Worker(Server):  # Optimizer
                 else para.A3C_clipping_mu_lower
 
             policy_loss = self.policy_loss_fn(policy=policy,
-                                              temporal_diff=tensor2value(tmp_diff),
+                                              temporal_diff=tmp_diff,
                                               action=self.buffer[j]["action"]) * truncated_mu
 
-            entropy_loss = self.entropy_loss_fn(policy=policy)
-            policy_total_loss = policy_loss + entropy_loss
-            policy_total_loss.backward(retain_graph=True)
+            policy_loss.backward(retain_graph=True)
+
+            CLIP_GRAD(self)
 
             if debug:
                 with open(para.FILE_debug_loss, "a+") as dumpfile:
-                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{truncated_mu}\t{tensor2value(policy_loss)}\t"
+                    dumpfile.write(f"{time_step}\t{self.id}\t{tensor2value(tmp_diff)[0]}\t{truncated_mu}\t{tensor2value(policy_loss)[0]}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
-            mu /= M[j]
 
     def reset_grad(self):
         for partial_net in self.net:
@@ -105,7 +105,7 @@ class Worker(Server):  # Optimizer
             R = reward_function(Worker=self, mc=mc, network=network, time_stamp=time_stamp) \
                 if self.buffer[-1]["charging_time"] > 0 else para.A3C_bad_reward
 
-        state_tensor = extract_state_tensor(self, network)
+        state_tensor, dont_care = extract_state_tensor(self, network)
         policy = self.get_policy(state_tensor)
         if torch.isnan(policy).any():
             FILE = open("debug.txt", "w")

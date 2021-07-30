@@ -20,6 +20,7 @@ def synchronize(server, mc_list):
 
 def update_gradient(server, MC_networks, debug=True):
     """
+    :param debug: if True, print to file
     :param server: cloud
     :param MC_networks: is ONE MC's networks, or Worker.net
     """
@@ -28,7 +29,7 @@ def update_gradient(server, MC_networks, debug=True):
             if not torch.isnan(MCParam.grad).any():
                 if debug:
                     debug_weights_update(serverParam.data, MCParam.grad)
-                serverParam.data -= learning_rate * MCParam.grad
+                serverParam.data += learning_rate * MCParam.grad
 
     server.actor_lr = server.actor_lr * server.decay_lr if server.actor_lr > para.A3C_serverActor_lr else para.A3C_serverActor_lr
     server.critic_lr = server.critic_lr * server.decay_lr if server.critic_lr > para.A3C_serverCritic_lr else para.A3C_serverCritic_lr

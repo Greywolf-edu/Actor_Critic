@@ -97,22 +97,24 @@ def H_get_heuristic_policy(net=None, mc=None, worker=None, time_stamp=0, chargin
 
     charging_time_factor = 1 / (1 + torch.exp((-1/2)*charging_time_factor))
 
-    H_policy = (0.35 * (energy_factor + priority_factor + target_monitoring_factor) * charging_time_factor
-                - 0.25 * self_charging_factor - 0.4 * distance_factor)
+    H_policy_origin = ((energy_factor + priority_factor + target_monitoring_factor) * charging_time_factor
+                - self_charging_factor - 2 * distance_factor)
 
-    H_policy = torch.Tensor(H_policy)
+    H_policy = torch.Tensor(H_policy_origin)
     H_policy = para.A3C_deterministic_factor * (H_policy - torch.mean(H_policy))
     G = torch.exp(H_policy)
     H_policy = G / torch.sum(G)
     H_policy.requires_grad = False
 
     if torch.isnan(H_policy).any():
-        print(energy_factor)
-        print(priority_factor)
-        print(target_monitoring_factor)
-        print(self_charging_factor)
-        print(distance_factor)
-        print(H_policy)
+        with open(para.FILE_debug_Nan_heuristic, "w") as dumpfile:
+            dumpfile.write(f"energy_factor:\n{energy_factor}\n")
+            dumpfile.write(f"priority_factor\n{priority_factor}\n")
+            dumpfile.write(f"target_monitoring_factor\n{target_monitoring_factor}\n")
+            dumpfile.write(f"self_charging_factor\n{self_charging_factor}\n")
+            dumpfile.write(f"distance_factor\n{distance_factor}\n")
+            dumpfile.write(f"H_policy_origin\n{H_policy_origin}\n")
+            dumpfile.write(f"H_policy\n{H_policy}\n")
         print("Heuristic policy contains Nan value")
         exit(120)
 

@@ -15,3 +15,14 @@
    - Đưa hệ số vào H_policy trong hàm *H_get_heuristic_policy*, hiện tại là (0.35, 0.35, 0.4)
 2. Nhận xét:
    - Chưa giải quyết được hiện tượng overlap
+
+**30/07/2021 - 9AM**:
+1. Thay đổi:
+   - Thêm GLIP_GRAD để ổn định cập nhật
+   - Đưa entropy loss vào cùng value loss
+   - Chuyển Gradient Descent thành Ascent
+   - Cho phép đạo hàm temporal difference với policy loss
+   - Chuyển code thành multithreading trong hàm run_per_sec của network và hàm all_asynchronize của Worker_method
+2. Nhận xét:
+   - mu là tỉ lệ giữa policy_prob và behavior_prob, mu nên tiến từ 0 đến 1 để thể hiện rằng AC học theo Heuristic
+   - Tuy nhiên mu đang có xu hướng giảm, có thể là lỗi code => cần debug

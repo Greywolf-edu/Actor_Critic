@@ -15,9 +15,10 @@ E_mc_thresh = 10
 A3C_k_step = 3
 A3C_synchronize_T = 100
 A3C_gamma = 0.95
-A3C_beta_entropy = 0.005
+A3C_beta_entropy = 0.01
 A3C_serverActor_lr = 1e-3
 A3C_serverCritic_lr = 1e-3
+A3C_clip_grad = 0.1
 
 #A3C week2
 A3C_alpha_heuristic = 1
@@ -26,21 +27,22 @@ A3C_clipping_mu_upper = 5
 A3C_clipping_mu_lower = 0.01
 A3C_deterministic_factor = 50
 A3C_serverBody_lr = 1e-3
-A3C_start_Body_lr = 0.125
-A3C_start_Actor_lr = 0.075
-A3C_start_Critic_lr = 0.075
+A3C_start_Body_lr = 2 * 1e-3
+A3C_start_Actor_lr = 2 * 1e-3
+A3C_start_Critic_lr = 2 * 1e-3
 A3C_decay_lr = 0.9397455978
-A3C_bad_reward = 0
+A3C_bad_reward = -1
 
 # Simulation
-SIM_duration = 10000
+SIM_duration = 50000
 SIM_partition_time = 300
 SIM_log_frequency = 100
 SIM_plot_network = False
 
 # Node
-NODE_e_thresh_ratio = 0.4
+NODE_e_thresh_ratio = 0.6
 
 # dumpfile
 FILE_debug_update = "log/weight_record/param.txt"
 FILE_debug_loss = "log/weight_record/loss.csv"
+FILE_debug_Nan_heuristic = "log/weight_record/Nan_heurisitc.txt"

@@ -69,7 +69,7 @@ class Server(nn.Module):
         body_out = self.body_net(state_vector)
         return self.critic_net(body_out)
 
-    def update_gradient(self, MC_networks):
+    def update_gradient_server(self, MC_networks):
         update_gradient(self, MC_networks)
 
 

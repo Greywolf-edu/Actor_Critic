@@ -8,6 +8,8 @@ from Simulator.Network.network_method import uniform_com_func, to_string, count_
 from Optimizer.A3C.Server_method import synchronize
 from Optimizer.A3C.Worker_method import all_asynchronize
 
+from multiprocessing.pool import ThreadPool as Pool
+
 
 class Network:
     def __init__(self, list_node=None, mc_list=None, target=None, server=None, package_size=400, nb_charging_pos=81):
@@ -84,8 +86,13 @@ class Network:
                 if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
+            pool = Pool(len(self.mc_list))
             for mc in self.mc_list:
-                mc.run(net=self, time_stamp=t)
+                pool.apply_async(mc.run, (self, t))
+            pool.close()
+            pool.join()
+            pool.terminate()
+
         return state
 
     def simulate_max_time(self, max_time=2000000, file_name="log/information_log.csv"):
