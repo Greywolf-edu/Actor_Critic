@@ -73,13 +73,13 @@ for nb_run in range(1):
     if para.MODEL_load:
         if Path(para.MODEL_save_actor_path + experiment).exists():
             print("Loading trained actor_net's weights ....")
-            global_Optimizer.actor_net = torch.load(para.MODEL_save_actor_path)
+            global_Optimizer.actor_net = torch.load(para.MODEL_save_actor_path + experiment)
         if Path(para.MODEL_save_critic_path + experiment).exists():
             print("Loading trained critic_net's weights ....")
-            global_Optimizer.critic_net = torch.load(para.MODEL_save_critic_path)
+            global_Optimizer.critic_net = torch.load(para.MODEL_save_critic_path + experiment)
         if Path(para.MODEL_save_body_path + experiment).exists():
             print("Loading trained body_net's weights ....")
-            global_Optimizer.body_net = torch.load(para.MODEL_save_body_path)
+            global_Optimizer.body_net = torch.load(para.MODEL_save_body_path + experiment)
 
     mc_list = []
     optimizer_list = []
