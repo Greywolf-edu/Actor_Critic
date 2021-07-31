@@ -69,17 +69,17 @@ for nb_run in range(1):
     global_Optimizer = Server(nb_action=clusters + 1, nb_state_feature=nb_state_feature, name="Global Optimizer")
 
     # If trained weights are supplied then load in:
-    experiment = f"_{experiment_type}_{experiment_index}.pth"
+    experiment = f"_{experiment_type}_{experiment_index}.weights"
     if para.MODEL_load:
         if Path(para.MODEL_save_actor_path + experiment).exists():
             print("Loading trained actor_net's weights ....")
-            global_Optimizer.actor_net = torch.load(para.MODEL_save_actor_path + experiment)
+            global_Optimizer.actor_net.load_state_dict(torch.load(para.MODEL_save_actor_path + experiment))
         if Path(para.MODEL_save_critic_path + experiment).exists():
             print("Loading trained critic_net's weights ....")
-            global_Optimizer.critic_net = torch.load(para.MODEL_save_critic_path + experiment)
+            global_Optimizer.critic_net.load_state_dict(torch.load(para.MODEL_save_critic_path + experiment))
         if Path(para.MODEL_save_body_path + experiment).exists():
             print("Loading trained body_net's weights ....")
-            global_Optimizer.body_net = torch.load(para.MODEL_save_body_path + experiment)
+            global_Optimizer.body_net.load_state_dict(torch.load(para.MODEL_save_body_path + experiment))
 
     mc_list = []
     optimizer_list = []

@@ -2,6 +2,7 @@ import random
 
 import torch
 import Simulator.parameter as para
+from multiprocessing.pool import ThreadPool as Pool
 
 
 def synchronize(server, mc_list):
@@ -13,9 +14,15 @@ def synchronize(server, mc_list):
     with open(para.FILE_debug_update, "a+") as dumpfile:
         dumpfile.write("One update step\n")
 
+    pool = Pool(len(server.net) * len(mc_list))
+
     for MC in mc_list:
-        MC.optimizer.actor_net.load_state_dict(server.actor_net.state_dict())
-        MC.optimizer.critic_net.load_state_dict(server.critic_net.state_dict())
+        for partial_net_worker, partial_net_server in zip(MC.optimizer.net, server.net):
+            pool.apply_async(partial_net_worker.load_state_dict, (partial_net_server.state_dict()))
+
+    pool.close()
+    pool.join()
+    pool.terminate()
 
 
 def update_gradient(server, MC_networks, debug=True):
