@@ -50,7 +50,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(1):
+for nb_run in range(3):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]

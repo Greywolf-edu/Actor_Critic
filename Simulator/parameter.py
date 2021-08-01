@@ -16,17 +16,17 @@ A3C_k_step = 3
 A3C_synchronize_T = 100
 A3C_gamma = 0.95
 A3C_beta_entropy = 0.01
+A3C_serverBody_lr = 1e-3
 A3C_serverActor_lr = 1e-3
 A3C_serverCritic_lr = 1e-3
 A3C_clip_grad = 0.5
 
 #A3C week2
 A3C_alpha_heuristic = 1
-A3C_decay_heuristic = 0.99999
+A3C_decay_heuristic = 0.9998
 A3C_clipping_mu_upper = 5
 A3C_clipping_mu_lower = 0.01
-A3C_deterministic_factor = 2
-A3C_serverBody_lr = 1e-3
+A3C_deterministic_factor = 50
 A3C_start_Body_lr = 2 * 1e-2
 A3C_start_Actor_lr = 2 * 1e-2
 A3C_start_Critic_lr = 2 * 1e-2
@@ -36,7 +36,7 @@ A3C_max_charging_time = 500
 A3C_possitive_learning_start = 0
 
 # Simulation
-SIM_duration = 30000
+SIM_duration = 15000
 SIM_partition_time = 300
 SIM_log_frequency = 100
 SIM_plot_network = False
