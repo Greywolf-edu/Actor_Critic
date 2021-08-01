@@ -106,13 +106,14 @@ for nb_run in range(3):
         result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
 
     finally:
-        # free memory space
-        print("Free memory space")
         if para.MODEL_save:
+            print("Saveing model...")
             torch.save(global_Optimizer.body_net.state_dict(), para.MODEL_save_body_path + experiment)
             torch.save(global_Optimizer.actor_net.state_dict(), para.MODEL_save_actor_path + experiment)
             torch.save(global_Optimizer.critic_net.state_dict(), para.MODEL_save_critic_path + experiment)
 
+        # free memory space
+        print("Free memory space")
         del global_Optimizer
         for optimizer in optimizer_list:
             del optimizer

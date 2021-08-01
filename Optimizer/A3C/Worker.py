@@ -61,6 +61,9 @@ class Worker(Server):  # Optimizer
         M = [self.buffer[i]["policy_prob"] / self.buffer[i]["behavior_prob"] for i in range(t)]
         mu = 1
 
+        total_value_loss = 0
+        policy_loss = 0
+
         for i in range(t):              # 0, 1
             j = t - 1 - i               # 1, 0
             mu *= M[j]
@@ -72,8 +75,8 @@ class Worker(Server):  # Optimizer
 
             entropy_loss = self.entropy_loss_fn(policy=policy)
             value_loss = self.value_loss_fn(value=value, reward=R)
-            total_value_loss = value_loss - entropy_loss
-            total_value_loss.backward(retain_graph=True)
+            total_value_loss += value_loss - entropy_loss
+            # total_value_loss.backward(retain_graph=True)
 
             tmp_diff = R - tensor2value(value)[0]
 
@@ -81,18 +84,23 @@ class Worker(Server):  # Optimizer
                 if min(mu, para.A3C_clipping_mu_upper) > para.A3C_clipping_mu_lower \
                 else para.A3C_clipping_mu_lower
 
-            policy_loss = self.policy_loss_fn(policy=policy,
+            policy_loss += self.policy_loss_fn(policy=policy,
                                               temporal_diff=tmp_diff,
                                               action=self.buffer[j]["action"]) * truncated_mu
 
-            policy_loss.backward(retain_graph=True)
+            # policy_loss.backward(retain_graph=True)
 
-            CLIP_GRAD(self)
+            # CLIP_GRAD(self)
 
             if debug:
                 with open(para.FILE_debug_loss, "a+") as dumpfile:
                     dumpfile.write(f"{time_step}\t{self.id}\t{tmp_diff}\t{truncated_mu}\t{tensor2value(policy_loss)}\t"
                                    f"{tensor2value(entropy_loss)}\t{tensor2value(value_loss)[0]}\n")
+
+        # backward
+        total_value_loss.backward(retain_graph=True)
+        policy_loss.backward()
+
 
     def reset_grad(self):
         for partial_net in self.net:
@@ -104,36 +112,37 @@ class Worker(Server):  # Optimizer
             R = reward_function(Worker=self, mc=mc, network=network, time_stamp=time_stamp) \
                 if self.buffer[-1]["charging_time"] > 0 else para.A3C_bad_reward
 
-        state_tensor, dont_care = extract_state_tensor(self, network)
-        policy = self.get_policy(state_tensor)
-        if torch.isnan(policy).any():
-            FILE = open("debug.txt", "w")
-            FILE.write(np.array2string(tensor2value(state_tensor)))
-            FILE.write("\n")
-            FILE.write(np.array2string(tensor2value(policy)))
-            FILE.close()
-            print("Error Nan policy")
-            exit(100)
+        with torch.no_grad():
+            state_tensor, dont_care = extract_state_tensor(self, network)
+            policy = self.get_policy(state_tensor)
+            if torch.isnan(policy).any():
+                FILE = open("debug.txt", "w")
+                FILE.write(np.array2string(tensor2value(state_tensor)))
+                FILE.write("\n")
+                FILE.write(np.array2string(tensor2value(policy)))
+                FILE.close()
+                print("Error Nan policy")
+                exit(100)
 
-        heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp) if self.alpha_H > 0.1 else 0
+            heuristic_policy = get_heuristic_policy(net=network, mc=mc, worker=self, time_stamp=time_stamp) if self.alpha_H > 0.1 else 0
 
-        behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
-        # if torch.sum(behavior_policy).detach() != 1:
-        #     print(behavior_policy)
-        #     print(torch.sum(behavior_policy))
-        #     exit(1)
+            behavior_policy = (1 - self.alpha_H) * policy + self.alpha_H * heuristic_policy
+            # if torch.sum(behavior_policy).detach() != 1:
+            #     print(behavior_policy)
+            #     print(torch.sum(behavior_policy))
+            #     exit(1)
 
-        action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
+            action = np.random.choice(self.action_space, p=tensor2value(behavior_policy))
 
-        # apply decay on alpha_H
-        self.alpha_H *= self.theta_H if self.alpha_H > 0.1 else 0 # stop heuristic
+            # apply decay on alpha_H
+            self.alpha_H *= self.theta_H if self.alpha_H > 0.1 else 0 # stop heuristic
 
-        # get charging time
-        if action == self.nb_action - 1:
-            charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
-        else:
-            charging_time = charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
-                                          theta=self.charging_time_theta)
+            # get charging time
+            if action == self.nb_action - 1:
+                charging_time = (mc.capacity - mc.energy) / mc.e_self_charge
+            else:
+                charging_time = charging_time_func(mc=mc, net=network, action_id=action, time_stamp=time_stamp,
+                                              theta=self.charging_time_theta)
 
         with open(f"log/Worker_{self.id}.csv", mode="a+") as dumpfile:
             dumpfile_writer = csv.writer(dumpfile)
