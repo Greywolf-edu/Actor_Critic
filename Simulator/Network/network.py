@@ -5,8 +5,6 @@ from scipy.spatial import distance
 import Simulator.parameter as para
 from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, \
     Kmeans_network_clustering
-from Optimizer.A3C.Server_method import synchronize
-from Optimizer.A3C.Worker_method import all_asynchronize
 
 from multiprocessing.pool import ThreadPool as Pool
 
@@ -29,7 +27,6 @@ class Network:
         self.index_node_in_cluster = []  # index_node_in_cluster[index] = list of id Node \in cluster index
 
         self.Server = server
-        self.T = para.A3C_synchronize_T
 
     def set_neighbor(self):
         for node in self.node:
@@ -61,17 +58,18 @@ class Network:
 
     def run_per_second(self, t):
         # ========= Synchronize at t = 0 and t % T == 0 ===========
-        if t == 0:
-            if self.Server is None:
-                print("A3C without global Server ??? Recheck your declaration")
-                exit(100)
-            else:
-                synchronize(self.Server, self.mc_list)
+        if t == 0 and self.Server is None:
+            print("A3C without global Server ??? Recheck your declaration")
+            exit(100)
 
-        if t % self.T == 0 and t > para.SIM_partition_time:  # after T (s)
-            if all_asynchronize(MCs=self.mc_list, Server=self.Server, moment=t):
-                print(f"Synchronize at time {t}")
-                synchronize(self.Server, self.mc_list)
+        if t % para.A3C_synchronize_T == 0 and t > para.SIM_partition_time:  # after T (s)
+            pool = Pool(len(self.mc_list))
+            for mc in self.mc_list:
+                pool.apply_async(mc.optimizer.update_server, ()).get(timeout=1.5)
+            pool.close()
+            pool.join()
+            pool.terminate()
+            
         # ==========================================================
         state = self.communicate()
         self.request_id = []
@@ -86,12 +84,6 @@ class Network:
                 if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
-            # pool = Pool(len(self.mc_list))
-            # for mc in self.mc_list:
-            #     pool.apply_async(mc.run, (self, t))
-            # pool.close()
-            # pool.join()
-            # pool.terminate()
             for mc in self.mc_list:
                 mc.run(self, t)
 

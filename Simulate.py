@@ -1,7 +1,7 @@
 import torch
 
-from Optimizer.A3C.Server import Server
-from Optimizer.A3C.Worker import Worker
+from Optimizer.A3C_pure.Server import Server
+from Optimizer.A3C_pure.Worker import Worker
 
 from Simulator.Sensor_Node.node import Node
 from Simulator.Network.network import Network
@@ -50,7 +50,7 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(3):
+for nb_run in range(1):
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -82,11 +82,9 @@ for nb_run in range(3):
             global_Optimizer.body_net.load_state_dict(torch.load(para.MODEL_save_body_path + experiment))
 
     mc_list = []
-    optimizer_list = []
     for id in range(nb_mc):
         # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
-        optimizer = Worker(Server_object=global_Optimizer, name="worker_" + str(id), id=id, theta=theta)
-        optimizer_list.append(optimizer)  # List worker
+        optimizer = Worker(Server=global_Optimizer, id=id, theta=theta)
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
                            e_self_charge=df.e_mc[experiment_index], velocity=df.velocity[experiment_index],
@@ -114,8 +112,6 @@ for nb_run in range(3):
             torch.save(global_Optimizer.critic_net.state_dict(), para.MODEL_save_critic_path + experiment)
 
         del global_Optimizer
-        for optimizer in optimizer_list:
-            del optimizer
 
 confidence = 0.95
 h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)

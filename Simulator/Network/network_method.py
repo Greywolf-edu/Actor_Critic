@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 
 import Simulator.parameter as para
 from Simulator.Network.package import Package
-from Simulator.Network.network_visualizer import net_visualize
+# from Simulator.Network.network_visualizer import net_visualize
 
 
 def uniform_com_func(net):
@@ -60,6 +60,6 @@ def Kmeans_network_clustering(network=None):
         network.index_node_in_cluster.append([index for index, label in enumerate(kmeans.labels_) if label == i])
 
     network.index_node_in_cluster.append([])  # depot
-    if para.SIM_plot_network:
-        net_visualize(net=network, nodes=network.node, charging_pos=charging_pos)
+    # if para.SIM_plot_network:
+    #     net_visualize(net=network, nodes=network.node, charging_pos=charging_pos)
     return charging_pos
