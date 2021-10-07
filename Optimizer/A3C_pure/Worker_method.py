@@ -13,16 +13,13 @@ def get_nearest_charging_pos(current_location, charging_pos_list):
 
 # TODO: re-define the reward
 def reward_function(Worker, mc, network, time_stamp):
-    e_list = []
-    for each_node in network.node:
-        if each_node.energy > 0:
-            e_list.append(each_node.energy)
+    r = -mc.last_distance_traveled / (1000 * np.sqrt(2)) + np.exp(mc.last_target_charged + 1) * mc.last_charging_energy_used
 
-    print("Average energy of living nodes: " + str(np.mean(np.array(e_list))))
-    if Worker.step < para.A3C_possitive_learning_start:
-        return -1 / min(e_list)
-    else:
-        return min(e_list)
+    record_file = open(f"log/{Worker.today}/{Worker.today_time_string}/worker@id{Worker.id}@reward-trace.csv", "a")
+    record_file.write(f"{mc.last_distance_traveled}, {mc.last_target_charged}, {mc.last_charging_energy_used}, {r}\n")
+    record_file.close()
+
+    return r
 
 # TODO: define terminal state
 def TERMINAL_STATE(state_tensor):
@@ -96,9 +93,9 @@ def extract_state_tensor(worker, net):
 
 # TODO: compute charging time
 def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.1):
-    return min(H_charging_time_func(mc=mc, net=net, action_id=action_id, time_stamp=time_stamp, theta=theta),
-               para.A3C_max_charging_time)
-    # return 150
+    # return min(H_charging_time_func(mc=mc, net=net, action_id=action_id, time_stamp=time_stamp, theta=theta),
+    #            para.A3C_max_charging_time)
+    return 100
 
 
 # heuristic timer

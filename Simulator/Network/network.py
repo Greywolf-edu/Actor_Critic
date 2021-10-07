@@ -65,7 +65,7 @@ class Network:
         if t % para.A3C_synchronize_T == 0 and t > para.SIM_partition_time:  # after T (s)
             pool = Pool(len(self.mc_list))
             for mc in self.mc_list:
-                pool.apply_async(mc.optimizer.update_server, ()).get(timeout=1.5)
+                pool.apply_async(mc.optimizer.update_server, ())
             pool.close()
             pool.join()
             pool.terminate()
@@ -84,8 +84,13 @@ class Network:
                 if index not in self.request_id and (t - node.check_point[-1]["time"]) > 50:
                     node.set_check_point(t)
         if self.active:
+            pool = Pool(len(self.mc_list))
             for mc in self.mc_list:
-                mc.run(self, t)
+                pool.apply_async(mc.run, (self, t))
+                # mc.run(self, t)
+            pool.close()
+            pool.join()
+            pool.terminate()
 
         return state
 

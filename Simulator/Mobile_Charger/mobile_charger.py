@@ -25,7 +25,11 @@ class MobileCharger:
         self.e_self_charge = e_self_charge  # energy receive per second
         self.velocity = velocity  # velocity of mc
 
+        # for optimization
         self.optimizer = optimizer
+        self.last_charging_energy_used = 0      # energy used to charge sensor by the previous action
+        self.last_distance_traveled = 0         # the distance traveled by the previous action
+        self.last_target_charged = 0            # the number of target charged by the previous action
 
     def get_status(self):
         if not self.is_active:
@@ -41,7 +45,7 @@ class MobileCharger:
         self.energy -= self.e_move
 
     def charge(self, net=None, node=None, func=charging):
-        func(self, net, node)
+        return func(self, net, node)
 
     def self_charge(self):
         self.energy = min(self.energy + self.e_self_charge, self.capacity)
@@ -62,7 +66,10 @@ class MobileCharger:
         self.start = self.current
         self.end = network.charging_pos[next_location]
         print('MC #{} is moving to {} and will charge for {}s'.format(self.id, self.end, charging_time))
-        moving_time = distance.euclidean(self.start, self.end) / self.velocity
+
+        self.last_distance_traveled = distance.euclidean(self.start, self.end)
+
+        moving_time = self.last_distance_traveled / self.velocity
         self.arriving_time = time_stamp + moving_time
         self.end_time = time_stamp + moving_time + charging_time
 
@@ -83,6 +90,7 @@ class MobileCharger:
             net.request_list = new_list_request
             if not net.request_list:
                 self.is_active = False
+       
             self.get_next_location(network=net, time_stamp=time_stamp)
         else:
             if self.is_active:
@@ -91,7 +99,9 @@ class MobileCharger:
                     self.update_location()
                 elif not self.is_self_charge:
                     # print("charging")
-                    self.charge(net)
+                    e, t = self.charge(net)
+                    self.last_charging_energy_used += e
+                    self.last_target_charged = t
                 else:
                     # print("self charging")
                     self.self_charge()

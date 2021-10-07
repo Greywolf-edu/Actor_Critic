@@ -4,9 +4,12 @@ import torch
 from Optimizer.A3C_pure.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func
 
+from datetime import date, datetime
+import os
+
 
 class Worker:
-    def __init__(self, Server=None, id=None, theta=None):
+    def __init__(self, Server=None, id=None, theta=None, today=None, time=None):
         self.id = id
         self.buffer = []
         self.action_space = [i for i in range(Server.nb_action)]
@@ -16,6 +19,18 @@ class Worker:
         self.server = Server
         self.step = 0
 
+        record_file = open(f"log/debug_worker/worker@id{self.id}.csv", "w")
+        record_file.write(f"step, reward, action, charging_time, proba\n")
+        record_file.close()
+
+        self.today = today
+        self.today_time_string = time
+
+        os.system(f"mkdir log/{self.today}/{self.today_time_string}")
+
+        record_file = open(f"log/{self.today}/{self.today_time_string}/worker@id{self.id}@reward-trace.csv", "w")
+        record_file.write("distance_traveled, nb_target_charged, energy_charged, reward\n")
+        record_file.close()
 
     def create_experience(self, state=None, action=None, charging_time=None,
                           policy_prob=None, behavior_prob=None,
@@ -29,6 +44,11 @@ class Worker:
             "policy_prob": policy_prob,     # record policy prob(action t)
             "behavior_prob": behavior_prob  # record behavior prob(action t)
         }
+
+        record_file = open(f"log/debug_worker/worker@id{self.id}.csv", "a")
+        record_file.write(f"{self.step},{reward},{action},{charging_time},{policy_prob}\n")
+        record_file.close()
+
         self.step += 1
         return experience
     
@@ -61,6 +81,11 @@ class Worker:
                 reward=R
             )
         )
+
+        # reset metrics for mobile charger
+        mc.last_target_charged = 0
+        mc.last_charging_energy_used = 0
+        mc.last_distance_traveled = 0
 
         return action, charging_time
 

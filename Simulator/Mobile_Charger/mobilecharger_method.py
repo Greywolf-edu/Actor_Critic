@@ -20,6 +20,13 @@ def get_location(mc):
 
 
 def charging(mc, net, node=None):
+    sum_p = 0
+    nb_target_charged = 0
     for node in net.node:
         p = node.charge(mc)
         mc.energy -= p
+        sum_p += p
+        if node in net.target:
+            nb_target_charged += 1
+    
+    return sum_p, nb_target_charged

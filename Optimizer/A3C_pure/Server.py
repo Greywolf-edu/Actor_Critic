@@ -14,39 +14,39 @@ class Server():
 
         self.body_net = nn.Sequential(
             nn.Linear(in_features=nb_state_feature, out_features=256),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Dropout(p=0.3),
             nn.Linear(in_features=256, out_features=512),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Dropout(p=0.5),
             nn.Linear(in_features=512, out_features=1024),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Dropout(p=0.5),
             nn.Linear(in_features=1024, out_features=512),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Dropout(p=0.5),
         )
 
         self.actor_net = nn.Sequential(
             nn.Linear(in_features=512, out_features=256),
-            nn.Sigmoid(),
+            nn.ReLU6(),
             nn.Dropout(p=0.4),
             nn.Linear(in_features=256, out_features=128),
-            nn.Sigmoid(),
+            nn.ReLU6(),
             nn.Dropout(p=0.3),
             nn.Linear(in_features=128, out_features=nb_action),
-            nn.Softmax()
+            nn.Softmax(dim=0)
         )
 
         self.critic_net = nn.Sequential(
             nn.Linear(in_features=512, out_features=256),
-            nn.Sigmoid(),
+            nn.LeakyReLU(),
             nn.Dropout(p=0.4),
             nn.Linear(in_features=256, out_features=128),
-            nn.Sigmoid(),
+            nn.LeakyReLU(),
             nn.Dropout(p=0.3),
             nn.Linear(in_features=128, out_features=1),
-            nn.Sigmoid()
+            nn.ReLU()
         )
 
         self.body_net.apply(init_weights)
@@ -79,6 +79,10 @@ class Server():
             self.Critic_optimizer.zero_grad()
 
             MC_loss.backward()
+
+            torch.nn.utils.clip_grad_value_(self.Body_optimizer.parameters(),para.A3C_clip_grad)
+            torch.nn.utils.clip_grad_value_(self.Actor_optimizer.parameters(),para.A3C_clip_grad)
+            torch.nn.utils.clip_grad_value_(self.Critic_optimizer.parameters(),para.A3C_clip_grad)
 
             self.Body_optimizer.step()
             self.Actor_optimizer.step()

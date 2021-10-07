@@ -19,11 +19,8 @@ import os
 from pathlib import Path
 import Simulator.parameter as para
 
-os.system("rm log/weight_record/*")
-os.system("rm log/Worker*")
+from datetime import datetime, date
 
-with open(para.FILE_debug_loss, "w") as dumpfile:
-    dumpfile.write("Time\tWorker\tTD\tmu\tPLoss\tELoss\tVLoss\n")
 
 experiment_type = input('experiment_type: ')  # ['node', 'target', 'MC', 'prob', 'package', 'cluster']
 df = pd.read_csv("data/" + experiment_type + ".csv")
@@ -38,10 +35,6 @@ experiment_index = int(input('experiment_index: '))  # [0..6]
 # | package           | 400 | 450 | 500   | 550 |`600`|`650`  |__700__|`750`|`800` |
 # | cluster           | 40  | 45  | 50    | 55  |`60` |`65`   | `70`  |`75` |__80__|
 
-output_file = open("log/Actor_Critic_Kmeans.csv", "w")
-result = csv.DictWriter(output_file, fieldnames=["nb_run", "lifetime", "dead_node"])
-result.writeheader()
-
 com_ran = df.commRange[experiment_index]
 prob = df.freq[experiment_index]
 nb_mc = df.nb_mc[experiment_index]
@@ -50,7 +43,19 @@ clusters = df.charge_pos[experiment_index]
 package_size = df.package[experiment_index]
 
 life_time = []
-for nb_run in range(1):
+for nb_run in range(para.SIM_nb_run):
+    today = date.today()
+    today_string = today.strftime("%b-%d-%Y")
+    os.system(f"mkdir log/{today_string}")
+
+    today_time = datetime.now()
+    today_time_string = today_time.strftime("%b-%d-%Y@%H:%M:%S")
+    file_name = f"log/{today_string}/{today_time_string}@{experiment_type}_{experiment_index}.csv"
+    output_file = open(file_name, "w")
+
+    # result = csv.DictWriter(output_file, fieldnames=["nb_run", "lifetime", "dead_node"])
+    # result.writeheader()
+
     random.seed(nb_run)
 
     energy = df.energy[experiment_index]
@@ -70,7 +75,7 @@ for nb_run in range(1):
 
     # If trained weights are supplied then load in:
     experiment = f"_{experiment_type}_{experiment_index}.weights"
-    if para.MODEL_load:
+    if para.MODEL_load & nb_run:
         if Path(para.MODEL_save_actor_path + experiment).exists():
             print("Loading trained actor_net's weights ....")
             global_Optimizer.actor_net.load_state_dict(torch.load(para.MODEL_save_actor_path + experiment))
@@ -84,7 +89,7 @@ for nb_run in range(1):
     mc_list = []
     for id in range(nb_mc):
         # optimizer = Actor_Critic(id=id, nb_action=clusters, alpha=alpha)
-        optimizer = Worker(Server=global_Optimizer, id=id, theta=theta)
+        optimizer = Worker(Server=global_Optimizer, id=id, theta=theta, today=today_string, time=today_time_string.split('@')[1])
         mc = MobileCharger(id, energy=df.E_mc[experiment_index], capacity=df.E_max[experiment_index],
                            e_move=df.e_move[experiment_index],
                            e_self_charge=df.e_mc[experiment_index], velocity=df.velocity[experiment_index],
@@ -97,13 +102,14 @@ for nb_run in range(1):
         "experiment {} #{}:\n\tnode: {}, target: {}, prob: {}, mc: {}, alpha: {}, cluster: {}, package_size: {}".format(
             experiment_type, experiment_index, len(net.node), len(net.target), prob, nb_mc, theta, clusters,
             package_size))
-    file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
+    # file_name = "log/Actor_Critic_Kmeans_{}_{}_{}.csv".format(experiment_type, experiment_index, nb_run)
     try:
         temp = net.simulate(max_time=SIM_duration, file_name=file_name)
         life_time.append(temp[0])
-        result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
+        # result.writerow({"nb_run": nb_run, "lifetime": temp[0], "dead_node": temp[1]})
 
     finally:
+        output_file.close()
         # free memory space
         print("Free memory space")
         if para.MODEL_save:
@@ -113,6 +119,6 @@ for nb_run in range(1):
 
         del global_Optimizer
 
-confidence = 0.95
-h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)
-result.writerow({"nb_run": tmean(life_time), "lifetime": h, "dead_node": 0})
+    # confidence = 0.95
+    # h = sem(life_time) * t.ppf((1 + confidence) / 2, len(life_time) - 1)
+    # result.writerow({"nb_run": tmean(life_time), "lifetime": h, "dead_node": 0})
