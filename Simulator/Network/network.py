@@ -1,6 +1,7 @@
 import csv
 
 from scipy.spatial import distance
+from Simulator.Network.package import Package
 
 import Simulator.parameter as para
 from Simulator.Network.network_method import uniform_com_func, to_string, count_package_function, \
@@ -17,8 +18,7 @@ class Network:
         self.mc_list = mc_list
         self.target = target
         self.charging_pos = []
-        self.request_list = []  # Full list of requesting massages: ['id', 'energy', 'avg_energy',
-        # 'energy_estimate', 'time']
+        self.request_list = []  # Full list of requesting massages: ['id', 'energy', 'avg_energy', 'energy_estimate', 'time']
         self.request_id = []
         self.package_size = package_size
         self.nb_charging_pos = nb_charging_pos
@@ -27,12 +27,14 @@ class Network:
         self.index_node_in_cluster = []  # index_node_in_cluster[index] = list of id Node \in cluster index
 
         self.Server = server
+        self.h_tree = {}
 
     def set_neighbor(self):
         for node in self.node:
             for other in self.node:
                 if other.id != node.id and distance.euclidean(node.location, other.location) <= node.com_ran:
                     node.neighbor.append(other.id)
+
 
     def set_level(self):
         queue = []
@@ -46,6 +48,7 @@ class Network:
                     self.node[neighbor_id].level = self.node[queue[0]].level + 1
                     queue.append(neighbor_id)
             queue.pop(0)
+
 
     def set_charging_pos(self, func=Kmeans_network_clustering):
         self.charging_pos = func(self)

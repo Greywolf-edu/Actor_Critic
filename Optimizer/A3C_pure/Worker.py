@@ -4,7 +4,6 @@ import torch
 from Optimizer.A3C_pure.Worker_method import reward_function, TERMINAL_STATE, \
     extract_state_tensor, charging_time_func
 
-from datetime import date, datetime
 import os
 
 
@@ -86,6 +85,7 @@ class Worker:
         mc.last_target_charged = 0
         mc.last_charging_energy_used = 0
         mc.last_distance_traveled = 0
+        mc.last_energy_overchargerd = 0
 
         return action, charging_time
 

@@ -95,7 +95,7 @@ def extract_state_tensor(worker, net):
 def charging_time_func(mc=None, net=None, action_id=None, time_stamp=0, theta=0.1):
     # return min(H_charging_time_func(mc=mc, net=net, action_id=action_id, time_stamp=time_stamp, theta=theta),
     #            para.A3C_max_charging_time)
-    return 100
+    return 60
 
 
 # heuristic timer

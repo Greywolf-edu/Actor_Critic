@@ -24,6 +24,8 @@ class Node:
         self.is_active = is_active  # statement of sensor. If sensor dead, state is False
         self.is_request = False
         self.level = 0
+        self.h_index = 0
+
 
     def set_average_energy(self, func=estimate_average_energy):
         """
@@ -50,16 +52,16 @@ class Node:
         """
         charging to sensor
         :param mc: mobile charger
-        :return: the amount of energy mc charges to this sensor
+        :return: the amount of energy mc charges to this sensor, and the overcharged energy 
         """
         if self.energy <= self.energy_max - 10 ** -5 and mc.is_stand and self.is_active:
             d = distance.euclidean(self.location, mc.current)
             p_theory = para.alpha / (d + para.beta) ** 2
             p_actual = min(self.energy_max - self.energy, p_theory)
             self.energy = self.energy + p_actual
-            return p_actual
+            return p_actual, p_theory - p_actual
         else:
-            return 0
+            return 0, 0
 
     def send(self, net=None, package=None, receiver=find_receiver, is_energy_info=False):
         """
@@ -87,7 +89,9 @@ class Node:
             e_send = para.ET + para.EFS * d ** 2 if d <= d0 else para.ET + para.EMP * d ** 4
             self.energy -= e_send * package.size
             self.used_energy += e_send * package.size
+            # net.sink(package)
             package.update_path(-1)
+            
         self.check_active(net)
 
     def receive(self, package):

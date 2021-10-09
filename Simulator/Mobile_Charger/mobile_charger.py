@@ -30,6 +30,7 @@ class MobileCharger:
         self.last_charging_energy_used = 0      # energy used to charge sensor by the previous action
         self.last_distance_traveled = 0         # the distance traveled by the previous action
         self.last_target_charged = 0            # the number of target charged by the previous action
+        self.last_energy_overchargerd = 0       # the amount of energy overcharged by the previous action
 
     def get_status(self):
         if not self.is_active:
@@ -99,8 +100,9 @@ class MobileCharger:
                     self.update_location()
                 elif not self.is_self_charge:
                     # print("charging")
-                    e, t = self.charge(net)
+                    e, t, o = self.charge(net)
                     self.last_charging_energy_used += e
+                    self.last_energy_overchargerd += o
                     self.last_target_charged = t
                 else:
                     # print("self charging")
